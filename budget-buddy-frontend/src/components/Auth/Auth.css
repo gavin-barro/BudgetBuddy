@@ -1,0 +1,276 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* This title style is now simpler as it lives inside the wrapper */
+.auth-title {
+  font-size: 2.25rem; /* 36px */
+  font-weight: 700;
+  color: #5b21b6;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+/* neutral page container (no glass) */
+.auth-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px;
+}
+
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: url('src/assets/budget-buddy-login.jpg') no-repeat;
+    background-size: cover;
+    background-position: center;
+}
+
+.wrapper {
+    width: 420px;
+    background: transparent;
+    border: 2px solid rgba(255, 255, 255, .5); /* Made border slightly more visible */
+    backdrop-filter: blur(20px);
+    box-shadow: 0 0 10px rgba(0, 0, 0, .2);
+    color: #333; /* CHANGED: Default text color is now dark gray */
+    border-radius: 10px;
+    padding: 30px 40px;
+}
+
+.wrapper h1 {
+    font-size: 36px;
+    text-align: center;
+    color: #5b21b6;
+}
+
+.wrapper .input-box {
+    position: relative;
+    width: 100%;
+    height: 50px;
+    margin: 30px 0;
+}
+
+.input-box input {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    border: 2px solid rgba(0, 0, 0, .2); /* CHANGED: Border is now a semi-transparent black */
+    border-radius: 40px;
+    font-size: 16px;
+    color: #333; /* CHANGED: Input text color is now dark gray */
+    padding: 20px 45px 20px 20px;
+    transition: border-color 0.3s;
+}
+
+.input-box input::placeholder {
+    color: #666; /* CHANGED: Placeholder color is now a medium gray */
+}
+
+.input-box input:focus {
+    border-color: #5b21b6; /* CHANGED: Highlight with a violet color on focus */
+}
+
+.input-box .icon {
+    position: absolute;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+    font-size: 16px;
+    color: #333; /* CHANGED: Icon color is now dark gray */
+}
+
+.wrapper .remember-forgot {
+    font-size: 14.5px;
+    display: flex;
+    justify-content: space-between;
+    margin: -15px 0 15px;
+}
+
+.remember-forgot label input {
+    accent-color: #5b21b6; /* CHANGED: Checkbox color now matches the theme */
+    margin-right: 4px;
+}
+
+.remember-forgot a {
+    color: #5b21b6; /* CHANGED: Link color is now violet */
+    text-decoration: none;
+}
+.remember-forgot a:hover {
+    text-decoration: underline;
+}
+
+.wrapper button {
+    width: 100%;
+    height: 50px;
+    background: #5b21b6; /* CHANGED: Button color is now violet */
+    color: #fff; /* CHANGED: Button text is now white */
+    border: none;
+    outline: none;
+    border-radius: 40px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.wrapper button:hover {
+    background-color: #4c1d95; /* CHANGED: A darker violet on hover */
+}
+
+.wrapper .register-link {
+    font-size: 14.5px;
+    text-align: center;
+    margin: 20px 0 15px;
+}
+
+.register-link p a {
+    color: #5b21b6; /* CHANGED: Link color is now violet */
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.register-link p a:hover {
+    text-decoration: underline;
+}
+
+
+.input-box .icon-button {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: #5b21b6;
+    font-size: 14.5px;
+    font-weight: 600;
+    font-family: 'Poppins', sans-serif;
+    /* Reset button defaults */
+    width: auto;
+    height: auto;
+    box-shadow: none;
+    /* Positioning */
+    position: absolute;
+    top: 50%;
+    right: 45px; /* Position next to the lock icon */
+    transform: translateY(-50%);
+}
+
+.input-box .icon-button:hover {
+    text-decoration: underline;
+}
+
+.wrapper .remember-forgot {
+    font-size: 14.5px;
+    display: flex;
+    justify-content: space-between;
+    margin: -15px 0 15px;
+}
+
+.remember-forgot label input {
+    accent-color: #5b21b6;
+    margin-right: 4px;
+}
+
+/* Combined style for links and text buttons */
+.remember-forgot a, .auth-toggle-btn {
+    color: #5b21b6;
+    text-decoration: none;
+    font-weight: 600;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 14.5px;
+    font-family: 'Poppins', sans-serif;
+}
+.remember-forgot a:hover, .auth-toggle-btn:hover {
+    text-decoration: underline;
+}
+
+/* Specific selector for the main submit button */
+.wrapper button[type="submit"] {
+    width: 100%;
+    height: 50px;
+    background: #5b21b6;
+    color: #fff;
+    border: none;
+    outline: none;
+    border-radius: 40px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.wrapper button[type="submit"]:hover {
+    background-color: #4c1d95;
+}
+
+.wrapper .register-link {
+    font-size: 14.5px;
+    text-align: center;
+    margin: 20px 0 15px;
+}
+
+.alert {
+    margin: -10px 0 15px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 14px;
+    line-height: 1.4;
+    text-align: left;
+}
+.alert.error {
+    background: rgba(220, 38, 38, 0.08);
+    border: 1px solid rgba(220, 38, 38, 0.25);
+    color: #7f1d1d;
+}
+
+/* Remaining styles for PasswordStrengthIndicator */
+.strength-container {
+    margin-top: -10px;
+    margin-bottom: 16px;
+}
+.strength-bars {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    margin: 8px 2px 4px;
+}
+.strength-bars .bar {
+    height: 8px;
+    border-radius: 8px;
+    background: rgba(0,0,0,0.1);
+    transition: transform 0.2s ease, background-color 0.2s ease;
+}
+.strength-bars .bar.fill { background: #5b21b6; }
+.strength-bars .bar.active { transform: scaleY(1.15); }
+.strength-label {
+    font-size: 12px;
+    color: #333;
+    margin-left: 2px;
+}
+.strength-checks {
+    list-style: none;
+    padding-left: 0;
+    margin-top: 6px;
+    margin-left: 2px;
+    color: #666;
+    font-size: 12px;
+}
+.strength-checks li.ok {
+    color: #333;
+    font-weight: 500;
+}
