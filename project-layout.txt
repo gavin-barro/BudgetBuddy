@@ -1,6 +1,6 @@
 BudgetBuddy
-├── backend/ (Spring Boot)
-│   ├── src/main/java/
+├── backend/
+│   ├── src/main/java/com/budgetbuddy
 │   │   ├── FinanceApplication.java
 │   │   ├── config/
 │   │   │   ├── SecurityConfig.java
