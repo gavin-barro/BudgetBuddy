@@ -5,59 +5,44 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.budgetbuddy</groupId>
-    <artifactId>budgetbuddy-backend</artifactId>
+    <artifactId>budgetbuddy</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>BudgetBuddy Backend</name>
-    <description>Backend for Personal Finance Tracking App</description>
+    <name>BudgetBuddy</name>
+    <description>Personal Finance Tracking App</description>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.6</version>
+        <version>3.3.4</version>
         <relativePath/>
     </parent>
 
-    <properties>
-        <java.version>17</java.version>
-    </properties>
-
     <dependencies>
-        <!-- Spring Boot Web for REST APIs -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-
-        <!-- Spring Boot Data JPA for database operations -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
-
-        <!-- Spring Boot Security for password hashing -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
-
-        <!-- PostgreSQL driver -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
-
-        <!-- Spring Boot Test for unit and integration tests -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- Spring Security Test for testing authentication -->
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -70,5 +55,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>
