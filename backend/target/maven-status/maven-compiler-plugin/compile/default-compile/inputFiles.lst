@@ -1,0 +1,7 @@
+/Users/gavinbarro/Documents/VT_programming/Fall_2025/CS-5784-Software-Project-Management/BudgetBuddy/backend/src/main/java/com/budgetbuddy/FinanceApplication.java
+/Users/gavinbarro/Documents/VT_programming/Fall_2025/CS-5784-Software-Project-Management/BudgetBuddy/backend/src/main/java/com/budgetbuddy/config/SecurityConfig.java
+/Users/gavinbarro/Documents/VT_programming/Fall_2025/CS-5784-Software-Project-Management/BudgetBuddy/backend/src/main/java/com/budgetbuddy/controller/AuthController.java
+/Users/gavinbarro/Documents/VT_programming/Fall_2025/CS-5784-Software-Project-Management/BudgetBuddy/backend/src/main/java/com/budgetbuddy/dto/UserDTO.java
+/Users/gavinbarro/Documents/VT_programming/Fall_2025/CS-5784-Software-Project-Management/BudgetBuddy/backend/src/main/java/com/budgetbuddy/entity/UserEntity.java
+/Users/gavinbarro/Documents/VT_programming/Fall_2025/CS-5784-Software-Project-Management/BudgetBuddy/backend/src/main/java/com/budgetbuddy/repository/UserRepository.java
+/Users/gavinbarro/Documents/VT_programming/Fall_2025/CS-5784-Software-Project-Management/BudgetBuddy/backend/src/main/java/com/budgetbuddy/service/AuthService.java
