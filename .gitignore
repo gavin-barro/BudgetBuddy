@@ -4,3 +4,4 @@ node_modules
 *.class
 .env
 how-to.txt
+backend/src/main/resources/application.properties
