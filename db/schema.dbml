@@ -1,55 +1,19 @@
-Project personal_finance_tracker {
-  database_type: "PostgreSQL"
-  Note: "Schema for Personal Finance Tracking App"
-}
+Project personal_finance_tracker { database_type: "PostgreSQL" Note: "Schema for Personal Finance Tracking App" }
 
-Table users {
-  id bigserial [primary key, increment]
-  first_name varchar(255) [not null]
-  last_name varchar(255) [not null]
-  email varchar(255) [unique, not null]
-  password_hash varchar(255) [not null] // Stores hashed password
-  created_at timestamp [default: `now()`]
-  
-  Note: "Stores user profiles and authentication details"
-}
+Table users { id SERIAL [primary key] first_name VARCHAR(255) [not null] last_name VARCHAR(255) [not null] email VARCHAR(255) [unique, not null] password_hash VARCHAR(255) [not null] created_at TIMESTAMP [default: CURRENT_TIMESTAMP]
 
-Table accounts {
-  id bigserial [primary key, increment]
-  user_id bigint [ref: > users.id, not null] // Foreign key to users
-  name varchar(255) [not null]
-  type enum('checking', 'savings', 'credit', 'other') [not null]
-  balance decimal(15, 2) [default: 0.00] // Current balance, updated on transactions
-  created_at timestamp [default: `now()`]
-  
-  Note: "Stores user's financial accounts"
-  
-  Indexes {
-    user_id [type: btree] // For efficient querying by user
-  }
-}
+Note: "Stores user profiles and authentication details" }
 
-Table transactions {
-  id bigserial [primary key, increment]
-  account_id bigint [ref: > accounts.id, not null] // Foreign key to accounts
-  user_id bigint [ref: > users.id, not null] // Foreign key to users
-  amount decimal(15, 2) [not null]
-  type enum('income', 'expense') [not null]
-  category varchar(255) [not null] // Could be enum for defaults, but varchar for custom categories
-  date date [not null]
-  description text
-  created_at timestamp [default: `now()`]
-  
-  Note: "Stores manual transactions with categorization"
-  
-  Indexes {
-    (account_id, date) [type: btree] // For efficient filtering/sorting by account and date
-    (user_id, category) [type: btree] // For dashboard aggregations by category
-    date [type: btree] // For time-based queries
-  }
-}
+Table accounts { id SERIAL [primary key] user_id INTEGER [ref: > users.id, not null] name VARCHAR(255) [not null] type ENUM('checking', 'savings', 'credit', 'other') [not null] balance DECIMAL(10,2) [default: 0.00] created_at TIMESTAMP [default: CURRENT_TIMESTAMP]
 
-// Relationships
-Ref: accounts.user_id > users.id [delete: cascade] // Delete accounts if user is deleted
-Ref: transactions.account_id > accounts.id [delete: cascade] // Delete transactions if account is deleted
-Ref: transactions.user_id > users.id [delete: cascade] // Ensure transaction ownership
+Note: "Stores user's financial accounts"
+
+Indexes { user_id [type: btree] } }
+
+Table transactions { id SERIAL [primary key] account_id INTEGER [ref: > accounts.id, not null] user_id INTEGER [ref: > users.id, not null] amount DECIMAL(10,2) [not null] type ENUM('income', 'expense') [not null] category VARCHAR(255) [not null] date TIMESTAMP [not null] description TEXT created_at TIMESTAMP [default: CURRENT_TIMESTAMP]
+
+Note: "Stores manual transactions with categorization"
+
+Indexes { (account_id, date) [type: btree] (user_id, category) [type: btree] date [type: btree] } }
+
+Ref: accounts.user_id > users.id [on delete cascade] Ref: transactions.account_id > accounts.id [on delete cascade] Ref: transactions.user_id > users.id [on delete cascade]

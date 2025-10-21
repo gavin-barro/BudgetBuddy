@@ -1,66 +1,76 @@
-BudgetBuddy
-├── backend/ (Spring Boot)
-│   ├── src/main/java/
-│   │   ├── FinanceApplication.java
-│   │   ├── config/
-│   │   │   ├── SecurityConfig.java
-│   │   │   ├── WebConfig.java
-│   │   │   └── JpaConfig.java
-│   │   ├── controller/
-│   │   │   ├── AuthController.java
-│   │   │   ├── AccountController.java
-│   │   │   ├── TransactionController.java
-│   │   │   └── DashboardController.java
-│   │   ├── dto/
-│   │   │   ├── UserDTO.java
-│   │   │   ├── AccountDTO.java
-│   │   │   ├── TransactionDTO.java
-│   │   │   └── DashboardSummaryDTO.java
-│   │   ├── entity/
-│   │   │   ├── UserEntity.java
-│   │   │   ├── AccountEntity.java
-│   │   │   └── TransactionEntity.java
-│   │   ├── repository/
-│   │   │   ├── UserRepository.java
-│   │   │   ├── AccountRepository.java
-│   │   │   └── TransactionRepository.java
-│   │   ├── service/
-│   │   │   ├── AuthService.java
-│   │   │   ├── AccountService.java
-│   │   │   ├── TransactionService.java
-│   │   │   └── DashboardService.java
-│   │   └── util/
-│   │       ├── JwtUtil.java
-│   │       └── ValidationUtil.java
-│   ├── resources/
-│   │   ├── application.properties
-│   │   ├── application-dev.properties
-│   ├── test/java/
-│   │   ├── controller/
-│   │   │   ├── AuthControllerTest.java
-│   │   │   ├── AccountControllerTest.java
-│   │   │   ├── TransactionControllerTest.java
-│   │   │   └── DashboardControllerTest.java
-│   │   ├── service/
-│   │   │   ├── AuthServiceTest.java
-│   │   │   ├── AccountServiceTest.java
-│   │   │   ├── TransactionServiceTest.java
-│   │   │   └── DashboardServiceTest.java
-│   │   └── repository/
-│   │       ├── UserRepositoryTest.java
-│   │       ├── AccountRepositoryTest.java
-│   │       └── TransactionRepositoryTest.java
-│   ├── pom.xml
-│   └── README.md
+BudgetBuddy/
+├── backend/                                    # Backend Java/Spring Boot project
+│   ├── src/
+│   │   ├── main/
+│   │   │   ├── java/
+│   │   │   │   └── com/budgetbuddy/
+│   │   │   │       ├── FinanceApplication.java  # Main Spring Boot application
+│   │   │   │       ├── config/
+│   │   │   │       │   ├── SecurityConfig.java  # BCrypt configuration
+│   │   │   │       │   ├── WebConfig.java      # Web configuration (placeholder)
+│   │   │   │       │   └── JpaConfig.java      # Optional DataSource config
+│   │   │   │       ├── controller/
+│   │   │   │       │   ├── AuthController.java # /register endpoint
+│   │   │   │       │   ├── AccountController.java
+│   │   │   │       │   ├── TransactionController.java
+│   │   │   │       │   └── DashboardController.java
+│   │   │   │       ├── dto/
+│   │   │   │       │   ├── UserDTO.java        # DTO for user registration
+│   │   │   │       │   ├── AccountDTO.java
+│   │   │   │       │   ├── TransactionDTO.java
+│   │   │   │       │   └── DashboardSummaryDTO.java
+│   │   │   │       ├── entity/
+│   │   │   │       │   ├── UserEntity.java     # JPA entity for users table
+│   │   │   │       │   ├── AccountEntity.java
+│   │   │   │       │   └── TransactionEntity.java
+│   │   │   │       ├── repository/
+│   │   │   │       │   ├── UserRepository.java # JPA repository for users
+│   │   │   │       │   ├── AccountRepository.java
+│   │   │   │       │   └── TransactionRepository.java
+│   │   │   │       ├── service/
+│   │   │   │       │   ├── AuthService.java    # Registration logic
+│   │   │   │       │   ├── AccountService.java
+│   │   │   │       │   ├── TransactionService.java
+│   │   │   │       │   └── DashboardService.java
+│   │   │   │       └── util/
+│   │   │   │           ├── JwtUtil.java
+│   │   │   │           └── ValidationUtil.java
+│   │   │   └── resources/
+│   │   │       ├── application.properties      # SQLite configuration 
+│   │   │       ├── application-dev.properties  # Optional dev profile config
+│   │   │       └── db/migration/              # Flyway migration scripts (if used)
+│   │   │           └── V1__create_users_table.sql # SQLite users table migration
+│   │   ├── test/
+│   │   │   ├── java/
+│   │   │   │   └── com/budgetbuddy/
+│   │   │   │       ├── controller/
+│   │   │   │       │   ├── AuthControllerTest.java # Unit tests for /register (implemented)
+│   │   │   │       │   ├── AccountControllerTest.java
+│   │   │   │       │   ├── TransactionControllerTest.java
+│   │   │   │       │   └── DashboardControllerTest.java
+│   │   │   │       ├── service/
+│   │   │   │       │   ├── AuthServiceTest.java
+│   │   │   │       │   ├── AccountServiceTest.java
+│   │   │   │       │   ├── TransactionServiceTest.java
+│   │   │   │       │   └── DashboardServiceTest.java
+│   │   │   │       └── repository/
+│   │   │   │           ├── UserRepositoryTest.java
+│   │   │   │           ├── AccountRepositoryTest.java
+│   │   │   │           └── TransactionRepositoryTest.java
+│   │   │   └── resources/
+│   │   │       └── application-test.properties # Optional test config for SQLite
+│   ├── pom.xml                                 # Maven configuration (updated for SQLite)
+│   └── README.md                              # Backend documentation
 │
-├── frontend/ (React)
+├── frontend/                                   # React frontend
 │   ├── public/
 │   │   ├── index.html
 │   │   ├── favicon.ico
 │   │   └── manifest.json
 │   ├── src/
 │   │   ├── assets/
-│   │   │   ├── images/ (logo.png, etc.)
+│   │   │   ├── images/
+│   │   │   │   └── logo.png
 │   │   │   └── styles/
 │   │   │       ├── main.css
 │   │   │       └── tailwind.css
@@ -104,19 +114,21 @@ BudgetBuddy
 │   ├── .prettierrc
 │   └── README.md
 │
-├── db/
-│   ├── schema.dbml
+├── db/                                        # Database-related files
+│   ├── schema.dbml                            # Database schema definition (updated for SQLite)
 │   ├── migrations/
-│   │   ├── V1__create_users_table.sql
-│   │   ├── V2__create_accounts_table.sql
-│   │   └── V3__create_transactions_table.sql
-│   └── seed.sql
+│   │   ├── V1__create_users_table.sql         # SQLite users table (implemented)
+│   │   ├── V2__create_accounts_table.sql      # SQLite accounts table
+│   │   └── V3__create_transactions_table.sql  # SQLite transactions table
+│   └── seed.sql                               # Optional seed data
 │
-├── docker/
+├── docker/                                    # Docker configuration
 │   ├── Dockerfile.backend
 │   ├── Dockerfile.frontend
 │   └── docker-compose.yml
 │
 ├── .gitignore
-├── README.md
+├── how-to.txt
+├── .env
+├── README.md                                  # Project-wide documentation
 └── LICENSE
