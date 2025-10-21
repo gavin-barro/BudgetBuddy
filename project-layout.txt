@@ -7,6 +7,7 @@ BudgetBuddy/
 │   │   │   │       ├── FinanceApplication.java  # Main Spring Boot application
 │   │   │   │       ├── config/
 │   │   │   │       │   ├── SecurityConfig.java  # BCrypt configuration
+│   │   │   │       │   ├── JwtProperties.java     # JWT configuration
 │   │   │   │       │   ├── WebConfig.java      # Web configuration (placeholder)
 │   │   │   │       │   └── JpaConfig.java      # Optional DataSource config
 │   │   │   │       ├── controller/
