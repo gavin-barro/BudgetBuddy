@@ -20,10 +20,12 @@ const LoginForm = ({ onSwitch, onSuccess }) => {
     setError('');
 
     try {
-      const user = await login(form.identifier, form.password);
+      const email = form.identifier.trim()
+      const password = form.password;
+      const user = await login(email, password);
       
       // --- SUCCESS ALERT ---
-      alert(`Login Successful! Welcome back, ${user.username}.`);
+      alert(`Login Successful! Welcome back, ${user.firstName}.`);
 
       if (form.remember) {
         localStorage.setItem('bb_remember', '1');
@@ -44,7 +46,7 @@ const LoginForm = ({ onSwitch, onSuccess }) => {
         <h1>Login</h1>
         {error && <div className="alert error" role="alert">• {error}</div>}
         <div className="input-box">
-          <input type="text" placeholder='Username or Email' name="identifier" value={form.identifier} onChange={onChange} required />
+          <input type="text" placeholder='Email' name="identifier" value={form.identifier} onChange={onChange} required />
           <FaUser className="icon"/>
         </div>
         <div className="input-box">
