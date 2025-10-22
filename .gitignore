@@ -8,3 +8,26 @@ backend/src/main/resources/application.properties
 backend/src/test/resources/application-test.properties
 .idea
 backend/target
+backend/src/test/resources/application-test.properties
+
+
+### Maven ###
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# Generated files
+*.class
+
+### IntelliJ ###
+.idea/
+
+# Gradle related
+.gradle
