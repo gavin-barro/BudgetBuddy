@@ -17,6 +17,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@EnableWebSecurity
 public class SecurityConfig {
 
     @Bean
