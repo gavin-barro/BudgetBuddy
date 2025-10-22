@@ -6,6 +6,9 @@ node_modules
 how-to.txt
 backend/src/main/resources/application.properties
 backend/src/test/resources/application-test.properties
+.idea
+backend/target
+backend/src/test/resources/application-test.properties
 
 
 ### Maven ###
