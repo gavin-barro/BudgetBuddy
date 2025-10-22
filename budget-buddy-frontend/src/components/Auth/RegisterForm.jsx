@@ -5,9 +5,9 @@ import PasswordStrengthIndicator from './PasswordStrengthIndicator';
 import { register } from '../../api/authService';
 
 const RegisterForm = ({ onSwitch }) => {
-  const [form, setForm] = useState({ username: '', email: '', password: '', confirm: '' });
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '', confirm: '' });
   const [showPwd, setShowPwd] = useState(false);
-  const [showConfirmPwd, setShowConfirmPwd] = useState(false); // <-- NEW STATE
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
   const [errors, setErrors] = useState([]);
   const [busy, setBusy] = useState(false);
 
@@ -15,8 +15,9 @@ const RegisterForm = ({ onSwitch }) => {
 
   const validate = () => {
     const errs = [];
-    if (!form.username.trim()) errs.push('Username is required.');
-    if (form.email && !/^\S+@\S+\.\S+$/.test(form.email)) errs.push('Email is invalid.');
+    if (!form.firstName.trim()) errs.push('First Name is required.');
+    if (!form.lastName.trim()) errs.push('Last Name is required.');
+    if (!form.email || !/^\S+@\S+\.\S+$/.test(form.email)) errs.push('A valid email is required.');
     if (form.password.length < 8) errs.push('Password must be at least 8 characters.');
     if (form.password !== form.confirm) errs.push('Passwords do not match.');
     return errs;
@@ -33,7 +34,12 @@ const RegisterForm = ({ onSwitch }) => {
     setBusy(true);
 
     try {
-      await register({ username: form.username, email: form.email, password: form.password });
+      await register({ 
+          firstName: form.firstName, 
+          lastName: form.lastName, 
+          email: form.email.trim(), 
+          password: form.password 
+        });
       alert("Registration successful! Please switch to the login tab to sign in.");
       onSwitch();
     } catch (err) {
@@ -53,11 +59,15 @@ const RegisterForm = ({ onSwitch }) => {
           </div>
         )}
         <div className="input-box">
-          <input type="text" placeholder="Username" name="username" value={form.username} onChange={onChange} required />
+          <input type="text" placeholder="First Name" name="firstName" value={form.firstName} onChange={onChange} required />
           <FaUser className="icon" />
         </div>
         <div className="input-box">
-          <input type="email" placeholder="Email (optional)" name="email" value={form.email} onChange={onChange} />
+          <input type="text" placeholder="Last Name" name="lastName" value={form.lastName} onChange={onChange} required />
+          <FaUser className="icon" />
+        </div>
+        <div className="input-box">
+          <input type="email" placeholder="Email" name="email" value={form.email} onChange={onChange} required/>
           <FaEnvelope className="icon" />
         </div>
         <div className="input-box">
@@ -71,7 +81,6 @@ const RegisterForm = ({ onSwitch }) => {
         <div className="input-box">
           <input type={showConfirmPwd ? 'text' : 'password'} placeholder="Confirm Password" name="confirm" value={form.confirm} onChange={onChange} required />
           <FaLock className="icon" />
-          {/* --- NEW SHOW BUTTON --- */}
           <button type="button" className="icon-button" onClick={() => setShowConfirmPwd(s => !s)}>
             {showConfirmPwd ? 'Hide' : 'Show'}
           </button>

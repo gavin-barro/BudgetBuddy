@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import './Profile.css';
 import { FaUser, FaEnvelope, FaLock } from 'react-icons/fa';
 // Import the new service functions
-import { updateUsername, updateEmail, updatePassword } from '../api/profileManagementService';
+// Note: You will need to create an `updateName` service function similar to the others.
+import { updateEmail, updatePassword } from '../api/profileManagementService';
 
 const ProfilePage = ({ user, onLogout, onUserUpdate }) => {
-  const [usernameForm, setUsernameForm] = useState({ newUsername: '' });
+  // State updated for first and last name
+  const [nameForm, setNameForm] = useState({ newFirstName: '', newLastName: '' });
   const [emailForm, setEmailForm] = useState({ newEmail: '' });
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '' });
   const [error, setError] = useState('');
@@ -19,13 +21,20 @@ const ProfilePage = ({ user, onLogout, onUserUpdate }) => {
     }, 3000); // Message disappears after 3 seconds
   };
 
-  const handleUsernameUpdate = async (e) => {
+  // Renamed and updated handler for changing the name
+  const handleNameUpdate = async (e) => {
     e.preventDefault();
     try {
-      const updatedUser = await updateUsername(usernameForm.newUsername);
+      // --- Placeholder: Replace with actual API call ---
+      // const updatedUser = await updateName(nameForm.newFirstName, nameForm.newLastName);
+      
+      // For now, we'll simulate the update locally.
+      console.log(`Simulating name update to: ${nameForm.newFirstName} ${nameForm.newLastName}`);
+      const updatedUser = { ...user, firstName: nameForm.newFirstName, lastName: nameForm.newLastName };
+      
       onUserUpdate(updatedUser); // Notify App.jsx of the change
-      showMessage('Username updated successfully!');
-      setUsernameForm({ newUsername: '' }); // Clear form
+      showMessage('Name updated successfully!');
+      setNameForm({ newFirstName: '', newLastName: '' }); // Clear form
     } catch (err) {
       showMessage(err.message, 'error');
     }
@@ -56,9 +65,11 @@ const ProfilePage = ({ user, onLogout, onUserUpdate }) => {
 
   return (
     <div className="profile-wrapper">
-      <div className="profile-header"><h1>Welcome, {user.username}</h1></div>
+      {/* Display user's first name */}
+      <div className="profile-header"><h1>Welcome, {user.firstName || user.email}</h1></div>
       <div className="profile-info">
-        <p><strong>Username:</strong> {user.username}</p>
+        {/* Display user's full name */}
+        <p><strong>Name:</strong> {user.firstName} {user.lastName}</p>
         <p><strong>Email:</strong> {user.email || 'Not provided'}</p>
       </div>
       
@@ -68,10 +79,30 @@ const ProfilePage = ({ user, onLogout, onUserUpdate }) => {
 
       <hr className="divider" />
       
-      <form onSubmit={handleUsernameUpdate} className="profile-form">
-        <h2>Change Username</h2>
-        <div className="input-box"><input type="text" placeholder="New Username" value={usernameForm.newUsername} onChange={(e) => setUsernameForm({ newUsername: e.target.value })} required /><FaUser className="icon" /></div>
-        <button type="submit">Update Username</button>
+      {/* Updated form for changing name */}
+      <form onSubmit={handleNameUpdate} className="profile-form">
+        <h2>Change Name</h2>
+        <div className="input-box">
+            <input 
+                type="text" 
+                placeholder="New First Name" 
+                value={nameForm.newFirstName} 
+                onChange={(e) => setNameForm(f => ({...f, newFirstName: e.target.value}))} 
+                required 
+            />
+            <FaUser className="icon" />
+        </div>
+        <div className="input-box">
+            <input 
+                type="text" 
+                placeholder="New Last Name" 
+                value={nameForm.newLastName} 
+                onChange={(e) => setNameForm(f => ({...f, newLastName: e.target.value}))} 
+                required 
+            />
+            <FaUser className="icon" />
+        </div>
+        <button type="submit">Update Name</button>
       </form>
       
       <form onSubmit={handleEmailUpdate} className="profile-form">

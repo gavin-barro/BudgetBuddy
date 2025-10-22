@@ -11,7 +11,7 @@ const AuthenticationPage = ({ onAuthSuccess }) => {
   const handleSuccess = (user) => {
     if (onAuthSuccess) onAuthSuccess(user);
     // You can add a success notification here, e.g., using a toast library
-    console.log(`Authentication successful for ${user.username}`);
+    console.log(`Authentication successful for ${user.email}`);
   };
 
   return (

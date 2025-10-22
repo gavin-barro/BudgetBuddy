@@ -1,67 +1,72 @@
-const getUsers = () => {
-    try { return JSON.parse(localStorage.getItem('bb_users')) || []; }
-    catch { return []; }
-};
-  
-const saveUsers = (users) => {
-    localStorage.setItem('bb_users', JSON.stringify(users));
-};
+// src/api/authService.js
+import api from "./apiClient";
 
-// --- API Service Functions ---
+// --- helpers ---
+function decodeJwt(token) {
+  try {
+    const payload = token.split(".")[1];
+    const json = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
+    return json;
+  } catch {
+    return null;
+  }
+}
 
-/**
- * Simulates a login API call.
- * @param {string} identifier The user's username OR email.
- * @param {string} password The user's password.
- * @returns {Promise<object>} A promise that resolves with the user object.
- */
-export const login = async (identifier, password) => {
-    console.log('[AuthService] Attempting login with identifier...');
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            const users = getUsers();
-            const identifierLower = identifier.toLowerCase();
-            
-            // Find user by either username or email
-            const found = users.find(u => 
-                u.username.toLowerCase() === identifierLower || 
-                (u.email && u.email.toLowerCase() === identifierLower)
-            );
+function persistSession(token, user) {
+  localStorage.setItem("bb_token", token);
+  localStorage.setItem("bb_current_user", JSON.stringify(user));
+}
 
-            if (!found || found.password !== password) {
-                return reject(new Error('Invalid credentials.'));
-            }
+export function getCurrentUser() {
+  const raw = localStorage.getItem("bb_current_user");
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch { return null; }
+}
 
-            const userObj = { username: found.username, email: found.email || '' };
-            localStorage.setItem('bb_current_user', JSON.stringify(userObj));
-            console.log('[AuthService] Login successful.');
-            resolve(userObj);
-        }, 1000); 
-    });
-};
+export function clearSession() {
+  localStorage.removeItem("bb_token");
+  localStorage.removeItem("bb_current_user");
+}
 
-/**
- * Simulates a register API call.
- * @param {object} userData The new user's data (username, email, password).
- * @returns {Promise<object>} A promise that resolves with the new user object.
- */
-export const register = async ({ username, email, password }) => {
-    console.log('[AuthService] Attempting registration...');
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            const users = getUsers();
-            const existing = users.some(u => u.username.toLowerCase() === username.toLowerCase());
-            
-            if (existing) {
-                return reject(new Error('Username already exists.'));
-            }
+// --- API calls ---
+export async function register({ firstName, lastName, email, password }) {
+  try {
+    await api.post("/api/auth/register", { firstName, lastName, email, password });
+    // Backend returns a message; we don't persist anything on register
+  } catch (err) {
+    const msg = err?.response?.data || "Registration failed.";
+    throw new Error(typeof msg === "string" ? msg : "Registration failed.");
+  }
+}
 
-            users.push({ username, email, password });
-            saveUsers(users);
+export async function login(email, password) {
+  try {
+    const { data } = await api.post("/api/auth/login", { email, password });
+    const token = data?.token;
+    if (!token) throw new Error("No token returned from server.");
 
-            const userObj = { username, email };
-            console.log('[AuthService] Registration successful.');
-            resolve(userObj);
-        }, 1000);
-    });
-};
+    // Build a minimal user from the token (subject/email)
+    const decoded = decodeJwt(token);
+    const subjectEmail = decoded?.sub || email;
+
+    // You can enrich this later after adding a /me endpoint
+    const user = { email: subjectEmail };
+
+    persistSession(token, user);
+    return user;
+  } catch (err) {
+    const msg = err?.response?.data || "Invalid email or password.";
+    throw new Error(typeof msg === "string" ? msg : "Login failed.");
+  }
+}
+
+export async function logout() {
+  // backend is stateless; just clear locally
+  clearSession();
+  try {
+    // Optional: let backend log it for analytics
+    await api.post("/api/auth/logout");
+  } catch {
+    // ignore network errors here
+  }
+}
