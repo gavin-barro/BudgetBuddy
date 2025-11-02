@@ -1,85 +1,120 @@
 package com.budgetbuddy.config;
 
+import com.budgetbuddy.util.JwtUtil;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.OncePerRequestFilter;
 
+import java.io.IOException;
 import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-@EnableWebSecurity
 public class SecurityConfig {
 
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    /** Password encoder bean */
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-            // 1) Enable CORS with our CorsConfigurationSource bean
-            .cors(Customizer.withDefaults())
-            // 2) Disable CSRF for stateless APIs
-            .csrf(csrf -> csrf.disable())
-            // 3) Authorize requests (permit auth endpoints + preflight)
-            .authorizeHttpRequests(auth -> auth
-                // Allow browser preflight requests
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                // Public auth endpoints
-                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/logout").permitAll()
-                // Everything else requires auth (once you add your JWT filter later)
-                .anyRequest().authenticated()
-            )
-            // 4) Stateless sessions for JWT
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-
-        return http.build();
-    }
-
-    /**
-     * CORS configuration for local dev with Vite.
-     * Adjust the origins to match where your frontend runs.
-     */
+    /** CORS configuration for frontend communication */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // Frontend dev origins — add/remove as needed
         config.setAllowedOrigins(List.of(
             "http://localhost:5173",
             "http://127.0.0.1:5173"
         ));
-        // If you prefer patterns, you can use setAllowedOriginPatterns(List.of("http://localhost:*"))
-
-        // Methods you allow the browser to use
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-
-        // Headers the browser is allowed to send
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
-
-        // If you send cookies (usually false with JWT Authorization headers)
-        config.setAllowCredentials(true);
-
-        // Headers the browser is allowed to read from the response
         config.setExposedHeaders(List.of("Authorization"));
-
-        // Preflight cache duration
+        config.setAllowCredentials(true);
         config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        // Apply to your API paths (or "/**")
         source.registerCorsConfiguration("/**", config);
         return source;
+    }
+
+    /** Main Spring Security configuration */
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .cors(Customizer.withDefaults())
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/logout").permitAll()
+                .anyRequest().authenticated()
+            )
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+            .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+
+    /** Register the JWT filter */
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter() {
+        return new JwtAuthenticationFilter();
+    }
+
+    /** Inner JWT Authentication Filter */
+    public class JwtAuthenticationFilter extends OncePerRequestFilter {
+        @Override
+        protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+                throws ServletException, IOException {
+            String header = request.getHeader("Authorization");
+            String jwtToken = null;
+            String username = null;
+
+            if (header != null && header.startsWith("Bearer ")) {
+                jwtToken = header.substring(7);
+                try {
+                    if (jwtUtil.validateToken(jwtToken)) {
+                        username = jwtUtil.getEmailFromToken(jwtToken);
+                    }
+                } catch (IllegalArgumentException e) {
+                    logger.warn("Unable to get JWT Token");
+                } catch (Exception e) {
+                    logger.error("JWT Token cannot be trusted", e);
+                }
+            }
+
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UsernamePasswordAuthenticationToken authToken =
+                        new UsernamePasswordAuthenticationToken(username, null, null);
+                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+            }
+
+            filterChain.doFilter(request, response);
+        }
     }
 }
