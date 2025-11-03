@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaSignOutAlt } from 'react-icons/fa';
+
 import './Navbar.css';
 
 export default function Navbar({ user, onNavigate, onLogout, activePage }) {

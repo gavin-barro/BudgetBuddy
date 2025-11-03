@@ -2,6 +2,9 @@ package com.budgetbuddy.service;
 
 import com.budgetbuddy.entity.UserEntity;
 import com.budgetbuddy.repository.UserRepository;
+
+import java.security.Principal;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -50,7 +53,7 @@ public class ProfileService {
         userRepository.save(user);
     }
 
-    public void updatePassword(String email, String currentPassword, String newPassword) {
+    public void updatePassword(Principal principal, String currentPassword, String newPassword) {
         if (currentPassword == null || currentPassword.isEmpty()) {
             throw new IllegalArgumentException("Current password is required");
         }
@@ -58,7 +61,7 @@ public class ProfileService {
             throw new IllegalArgumentException("New password is required");
         }
 
-        UserEntity user = getUserByEmail(email);
+        UserEntity user = getUserByEmail(principal.getName());
         if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
             throw new IllegalArgumentException("Current password is incorrect");
         }

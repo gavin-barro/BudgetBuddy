@@ -19,6 +19,12 @@ public class AccountService {
     @Autowired
     private UserRepository userRepository;
 
+    public Iterable<AccountEntity> getAccountsByUsername(String userEmail) {
+        UserEntity user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        return accountRepository.findByUserId(user.getId());
+    }
+
     public AccountEntity createAccount(String userEmail, AccountDTO accountDTO) {
         // Validate input
         if (accountDTO.getName() == null || accountDTO.getName().trim().isEmpty()) {
@@ -66,6 +72,20 @@ public class AccountService {
             account.setName(accountDTO.getName().trim());
         }
 
+        if (accountDTO.getType() != null && !accountDTO.getType().trim().isEmpty()) {
+            String canonical = normalizeType(accountDTO.getType());
+            account.setType(AccountEntity.AccountType.valueOf(canonical));
+        }
+
+        if (accountDTO.getBalance() != null) {
+            Double b = accountDTO.getBalance();
+            if (b.isNaN() || b.isInfinite()) {
+                throw new IllegalArgumentException("Balance must be a valid number");
+            }
+            account.setBalance(b);
+        }
+        
+
         // Save updated account
         return accountRepository.save(account);
     }
@@ -91,4 +111,21 @@ public class AccountService {
         // Delete the account
         accountRepository.delete(account);
     }
+
+
+    // Helper method to help with adding account type
+    private String normalizeType(String raw) {
+    String s = raw == null ? "" : raw.trim().toLowerCase();
+    switch (s) {
+        case "checking": return "checking";
+        case "savings": return "savings";
+        case "credit":
+        case "credit card":
+        case "credit_card": return "credit";
+        // If you don’t support these as first-class types, map them to "other"
+        case "investment":
+        case "loan":
+        default: return "other";
+    }
+}
 }

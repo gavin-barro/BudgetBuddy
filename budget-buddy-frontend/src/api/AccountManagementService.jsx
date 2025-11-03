@@ -1,117 +1,86 @@
 // src/api/AccountManagementService.jsx
-// LocalStorage-backed mock service for Accounts CRUD.
-// Each user's accounts are stored under bb_accounts:<userKey>
+// ===============================================
+// API-backed service that talks to AccountController
+// ===============================================
+import apiClient from './apiClient';
 
-const STORAGE_PREFIX = 'bb_accounts:';
-const LATENCY_MS = 200; // tiny artificial delay to mimic a network call
+const ACCOUNTS_BASE = "/api/accounts";
+const ACCOUNT_ITEM = (id) => `${ACCOUNTS_BASE}/${encodeURIComponent(id)}`;
 
-// Derive a stable user key (email preferred; fall back to id)
-const userKeyOf = (user) => {
-  if (!user) throw new Error('No user provided');
-  return String(user.email || user.id || user.userId || 'anon').toLowerCase();
+// Normalize list payloads (array OR { accounts: [...] })
+const normalizeList = (data) => (Array.isArray(data) ? data : (data?.accounts ?? []));
+
+// Normalize a single account’s id to a consistent key the UI expects
+const coerceId = (a) => {
+  if (!a) return a;
+  const id = a.id ?? a.accountId ?? a._id ?? a.uuid ?? null;
+  return id ? { ...a, id } : a;
 };
 
-// LocalStorage helpers
-const load = (user) => {
-  const raw = localStorage.getItem(STORAGE_PREFIX + userKeyOf(user));
-  try {
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+// Canonicalize account types to what the BE expects.
+// Map display labels → canonical lowercase.
+const normalizeType = (t) => {
+  if (!t) return undefined;
+  const s = String(t).trim().toLowerCase();
+  if (s === 'checking') return 'checking';
+  if (s === 'savings') return 'savings';
+  if (s === 'credit' || s === 'credit card') return 'credit';
+  if (s === 'investment') return 'other'; // adjust if BE supports 'investment'
+  if (s === 'loan') return 'other';
+  return 'other';
 };
 
-const save = (user, accounts) => {
-  localStorage.setItem(
-    STORAGE_PREFIX + userKeyOf(user),
-    JSON.stringify(accounts)
-  );
+// Convert to number but allow 0; return null if truly not a number.
+const toNumberOrNull = (v) => {
+  if (v === '' || v === null || v === undefined) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
 };
 
-// Small async wrapper with latency
-const respond = (payload, ok = true) =>
-  new Promise((resolve, reject) =>
-    setTimeout(() => (ok ? resolve(payload) : reject(payload)), LATENCY_MS)
-  );
-
-// ID generator (e.g., acc_0003)
-const nextId = (accounts) => {
-  const n = (accounts.length + 1).toString().padStart(4, '0');
-  return `acc_${n}`;
-};
-
-/**
- * Public API
- */
 const AccountManagementService = {
-  // GET /accounts
-  async list(user) {
-    const accounts = load(user);
-    return respond(accounts);
+  // GET /api/accounts  -> AccountView[]
+  async list() {
+    const { data } = await apiClient.get(ACCOUNTS_BASE);
+    const arr = normalizeList(data).map(coerceId);
+    return arr;
   },
 
-  // POST /accounts
-  async create(user, draft) {
-    const accounts = load(user);
-    const newAccount = {
-      id: nextId(accounts),
-      name: (draft?.name || 'Untitled').trim(),
-      type: (draft?.type || 'Checking').trim(),
-      balance: Number(draft?.balance) || 0,
-      _owner: userKeyOf(user), // ownership marker for clarity/debug
+  // POST /api/accounts { name, type, balance } -> AccountView
+  async create(draft) {
+    const payload = {
+      name: (draft?.name ?? "Untitled").trim(),
+      type: normalizeType(draft?.type) ?? 'checking',
+      balance: toNumberOrNull(draft?.balance) ?? 0,
     };
-    const updated = [...accounts, newAccount];
-    save(user, updated);
-    return respond({ account: newAccount, accounts: updated });
+    const { data } = await apiClient.post(ACCOUNTS_BASE, payload);
+    const created = coerceId(data?.account ?? data);
+    const accounts = await this.list();
+    return { account: created, accounts };
   },
 
-  // PUT /accounts/:id
-  async update(user, accountId, patch) {
-    const accounts = load(user);
-    const idx = accounts.findIndex((a) => a.id === accountId);
-    if (idx === -1) {
-      return respond({ error: 'Not found or not owned by user' }, false);
+  // PUT /api/accounts/:id { name?, type?, balance? } -> AccountView
+  async update(id, patch) {
+    const payload = {};
+    if (patch?.name != null) payload.name = String(patch.name).trim();
+    if (patch?.type != null) payload.type = normalizeType(patch.type);
+
+    // IMPORTANT: allow 0
+    if (patch?.balance !== undefined) {
+      const num = toNumberOrNull(patch.balance);
+      if (num !== null) payload.balance = num;
     }
-    const updatedAccount = {
-      ...accounts[idx],
-      ...(patch?.name != null ? { name: String(patch.name) } : {}),
-      ...(patch?.type != null ? { type: String(patch.type) } : {}),
-      ...(patch?.balance != null ? { balance: Number(patch.balance) || 0 } : {}),
-    };
-    const updated = [...accounts];
-    updated[idx] = updatedAccount;
-    save(user, updated);
-    return respond({ account: updatedAccount, accounts: updated });
+
+    const { data } = await apiClient.put(ACCOUNT_ITEM(id), payload);
+    const updated = coerceId(data?.account ?? data);
+    const accounts = await this.list();
+    return { account: updated, accounts };
   },
 
-  // DELETE /accounts/:id
-  async remove(user, accountId) {
-    const accounts = load(user);
-    const exists = accounts.some((a) => a.id === accountId);
-    if (!exists) {
-      return respond({ error: 'Not found or not owned by user' }, false);
-    }
-    const updated = accounts.filter((a) => a.id !== accountId);
-    save(user, updated);
-    return respond({ accounts: updated, deletedId: accountId });
-  },
-
-  // Utility: seed local store from an in-memory user object, once
-  seedFromUser(user) {
-    if (!user) return;
-    const current = load(user);
-    if (current.length) return; // already seeded
-    if (Array.isArray(user.accounts) && user.accounts.length) {
-      // normalize incoming accounts (ensure ids/types/balance formats)
-      const seeded = user.accounts.map((a, i) => ({
-        id: a.id || `acc_${(i + 1).toString().padStart(4, '0')}`,
-        name: String(a.name || 'Untitled'),
-        type: String(a.type || 'Checking'),
-        balance: Number(a.balance) || 0,
-        _owner: userKeyOf(user),
-      }));
-      save(user, seeded);
-    }
+  // DELETE /api/accounts/:id
+  async remove(id) {
+    await apiClient.delete(ACCOUNT_ITEM(id));
+    const accounts = await this.list();
+    return { accounts, deletedId: id };
   },
 };
 

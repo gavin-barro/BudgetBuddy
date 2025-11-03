@@ -13,7 +13,7 @@ import './Dashboard.css';
  * NOTE: This page now reads accounts/transactions from props.user
  * so it always reflects the same data as the Accounts page (mock API-backed).
  */
-const DashboardPage = ({ user }) => {
+const DashboardPage = ({ user, accounts: accountsProp }) => {
   const fallbackAccounts = [
     { id: 'acc_1', name: 'Everyday Checking', type: 'Checking', balance: 1425.32 },
     { id: 'acc_2', name: 'Vacation Savings', type: 'Savings', balance: 5200.0 },
@@ -29,7 +29,9 @@ const DashboardPage = ({ user }) => {
   ];
 
   const accounts =
-    Array.isArray(user?.accounts) && user.accounts.length ? user.accounts : fallbackAccounts;
+    (Array.isArray(accountsProp) && accountsProp.length && accountsProp) ||
+    (Array.isArray(user?.accounts) && user.accounts.length && user.accounts) ||
+    fallbackAccounts;
 
   const transactions =
     Array.isArray(user?.transactions) && user.transactions.length

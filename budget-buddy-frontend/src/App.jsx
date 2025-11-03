@@ -1,3 +1,4 @@
+// src/App.jsx
 import React, { useState, useEffect } from 'react';
 import AuthenticationPage from './pages/AuthenticationPage';
 import ProfilePage from './pages/ProfilePage';
@@ -11,69 +12,77 @@ function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [activeView, setActiveView] = useState('dashboard'); // 'dashboard' | 'accounts' | 'profile'
 
-  // --- BYPASS AUTH FOR TESTING ---
+  // Keep accounts separate from currentUser so we can refresh from the API cleanly
+  const [accounts, setAccounts] = useState([]);
+
+  // When the user logs in, fetch their accounts from the backend
   useEffect(() => {
-    const dummyUser = {
-      firstName: 'Test',
-      lastName: 'User',
-      email: 'test@example.com',
-      accounts: [
-        { id: 'acc_1', name: 'Checking', type: 'Checking', balance: 1200 },
-        { id: 'acc_2', name: 'Savings', type: 'Savings', balance: 5000 },
-      ],
-      transactions: [
-        { id: 't1', name: 'Groceries', category: 'Food', accountId: 'acc_1', amount: -50 },
-        { id: 't2', name: 'Paycheck', category: 'Recreation', accountId: 'acc_1', amount: 2000 },
-      ],
+    const fetchAccounts = async () => {
+      if (!currentUser) {
+        setAccounts([]);
+        setCurrentUser((prev) => (prev ? { ...prev, accounts: [] } : null))
+        return;
+      }
+      try {
+        const rows = await AccountManagementService.list();
+        setAccounts(rows);
+        setCurrentUser((prev) => (prev ? { ...prev, accounts: rows } : null));
+      } catch (e) {
+        console.error(e);
+      }
     };
+    fetchAccounts();
+  }, [currentUser]);
 
-    setCurrentUser(dummyUser);
-    // Seed mock store once, then load accounts from the service so all pages are in sync
-    AccountManagementService.seedFromUser(dummyUser);
-    AccountManagementService.list(dummyUser).then((accounts) => {
-      setCurrentUser((u) => ({ ...u, accounts }));
-    });
-  }, []);
-
-  // --- Handlers using the mock API service ---
+  // --- Account handlers (API-backed) ---
   const handleAddAccount = async (draft) => {
-    if (!currentUser) return;
-    const res = await AccountManagementService.create(currentUser, draft);
-    if (res?.accounts) {
-      setCurrentUser((u) => ({ ...u, accounts: res.accounts }));
+    try {
+      const res = await AccountManagementService.create(draft);
+      if (res?.accounts) {
+        setAccounts(res.accounts);
+        setCurrentUser((prev) => (prev ? { ...prev, accounts: res.accounts } : null));
+      }
+    } catch (e) {
+      console.error(e);
+      alert(e?.message || 'Failed to add account');
     }
   };
 
   const handleAccountUpdate = async (id, patch) => {
-    if (!currentUser) return;
-    const res = await AccountManagementService.update(currentUser, id, patch);
-    if (res?.accounts) {
-      setCurrentUser((u) => ({ ...u, accounts: res.accounts }));
+    try {
+      const res = await AccountManagementService.update(id, patch);
+      if (res?.accounts) {
+        setAccounts(res.accounts);
+        setCurrentUser((prev) => (prev ? { ...prev, accounts: res.accounts } : null));
+      } 
+    } catch (e) {
+      console.error(e);
+      alert(e?.message || 'Failed to update account');
     }
   };
 
   const handleAccountDelete = async (id) => {
-    if (!currentUser) return;
-    const res = await AccountManagementService.remove(currentUser, id);
-    if (res?.accounts) {
-      // Also remove transactions tied to that account on the client (optional convenience)
-      setCurrentUser((u) => ({
-        ...u,
-        accounts: res.accounts,
-        transactions: (u.transactions || []).filter((t) => t.accountId !== id),
-      }));
+    try {
+      const res = await AccountManagementService.remove(id);
+      if (res?.accounts) {
+        setAccounts(res.accounts);
+        setCurrentUser((prev) => (prev ? { ...prev, accounts: res.accounts } : null));
+      }
+    } catch (e) {
+      console.error(e);
+      alert(e?.message || 'Failed to delete account');
     }
   };
 
   const handleUserUpdate = (updatedUser) => setCurrentUser(updatedUser);
   const handleLogout = () => {
     setCurrentUser(null);
-    // If you were persisting auth, you’d clear tokens/localStorage here.
+    setAccounts([]);
+    // clear tokens/localStorage here if you persist auth
   };
 
-
+  // Show auth until a real user is present
   if (!currentUser) {
-    // keep your old path available when you disable bypass
     return <AuthenticationPage onAuthSuccess={setCurrentUser} />;
   }
 
@@ -86,10 +95,10 @@ function App() {
         onLogout={handleLogout}
       />
       <div className="page-shell">
-        {activeView === 'dashboard' && <DashboardPage user={currentUser} />}
+        {activeView === 'dashboard' && <DashboardPage user={currentUser} accounts={accounts} />}
         {activeView === 'accounts' && (
           <AccountsPage
-            accounts={currentUser.accounts}
+            accounts={accounts}
             onUpdateAccount={handleAccountUpdate}
             onDeleteAccount={handleAccountDelete}
             onAddAccount={handleAddAccount}
