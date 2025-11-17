@@ -29,4 +29,30 @@ public class TransactionController {
             return new ResponseEntity<>("An error occurred while creating the transaction", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    // PUT /api/transactions/{id} - Update an existing transaction
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateTransaction(@PathVariable Long id, @RequestBody TransactionDTO transactionDTO, Principal principal) {
+        try {
+            TransactionEntity updatedTransaction = transactionService.updateTransaction(principal.getName(), id, transactionDTO);
+            return new ResponseEntity<>("Transaction updated successfully", HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            return new ResponseEntity<>("An error occurred while updating the transaction", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // DELETE /api/transactions/{id} - Delete an existing transaction
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteTransaction(@PathVariable Long id, Principal principal) {
+        try {
+            transactionService.deleteTransaction(principal.getName(), id);
+            return new ResponseEntity<>("Transaction deleted successfully", HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            return new ResponseEntity<>("An error occurred while deleting the transaction", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }
