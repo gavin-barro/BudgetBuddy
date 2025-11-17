@@ -8,7 +8,7 @@ public class AccountDTO {
 
     // Getters and setters
     public String getName() {
-        return name;
+        return this.name;
     }
 
     public void setName(String name) {
@@ -16,7 +16,7 @@ public class AccountDTO {
     }
 
     public String getType() {
-        return type;
+        return this.type;
     }
 
     public void setType(String type) {
@@ -24,7 +24,7 @@ public class AccountDTO {
     }
 
     public Double getBalance() {
-        return balance;
+        return this.balance;
     }
 
     public void setBalance(Double balance) {

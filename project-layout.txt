@@ -6,30 +6,32 @@ BudgetBuddy/
 │   │   │   │   └── com/budgetbuddy/
 │   │   │   │       ├── FinanceApplication.java  # Main Spring Boot application
 │   │   │   │       ├── config/
-│   │   │   │       │   ├── SecurityConfig.java  # BCrypt configuration
+│   │   │   │       │   ├── SecurityConfig.java  # BCrypt configuration + JWT filter (updated)
 │   │   │   │       │   ├── JwtProperties.java     # JWT configuration
 │   │   │   │       │   ├── WebConfig.java      # Web configuration (placeholder)
 │   │   │   │       │   └── JpaConfig.java      # Optional DataSource config
 │   │   │   │       ├── controller/
-│   │   │   │       │   ├── AuthController.java # /register endpoint
+│   │   │   │       │   ├── AuthController.java # /register, /login, /logout endpoints
+│   │   │   │       │   ├── ProfileController.java  # NEW: /profile GET/PUT endpoints (get profile, update name/email/password)
 │   │   │   │       │   ├── AccountController.java
 │   │   │   │       │   ├── TransactionController.java
 │   │   │   │       │   └── DashboardController.java
 │   │   │   │       ├── dto/
-│   │   │   │       │   ├── UserDTO.java        # DTO for user registration
+│   │   │   │       │   ├── UserDTO.java        # DTO for user registration/profile (reused)
 │   │   │   │       │   ├── AccountDTO.java
 │   │   │   │       │   ├── TransactionDTO.java
 │   │   │   │       │   └── DashboardSummaryDTO.java
 │   │   │   │       ├── entity/
-│   │   │   │       │   ├── UserEntity.java     # JPA entity for users table
+│   │   │   │       │   ├── UserEntity.java     # JPA entity for users table (reused)
 │   │   │   │       │   ├── AccountEntity.java
 │   │   │   │       │   └── TransactionEntity.java
 │   │   │   │       ├── repository/
-│   │   │   │       │   ├── UserRepository.java # JPA repository for users
+│   │   │   │       │   ├── UserRepository.java # JPA repository for users (reused)
 │   │   │   │       │   ├── AccountRepository.java
 │   │   │   │       │   └── TransactionRepository.java
 │   │   │   │       ├── service/
-│   │   │   │       │   ├── AuthService.java    # Registration logic
+│   │   │   │       │   ├── AuthService.java    # Registration/login logic
+│   │   │   │       │   ├── ProfileService.java  # NEW: Profile update logic (get/update name/email/password)
 │   │   │   │       │   ├── AccountService.java
 │   │   │   │       │   ├── TransactionService.java
 │   │   │   │       │   └── DashboardService.java
@@ -37,7 +39,7 @@ BudgetBuddy/
 │   │   │   │           ├── JwtUtil.java
 │   │   │   │           └── ValidationUtil.java
 │   │   │   └── resources/
-│   │   │       ├── application.properties      # SQLite configuration 
+│   │   │       ├── application.properties      # SQLite configuration (or PostgreSQL as updated)
 │   │   │       ├── application-dev.properties  # Optional dev profile config
 │   │   │       └── db/migration/              # Flyway migration scripts (if used)
 │   │   │           └── V1__create_users_table.sql # SQLite users table migration
@@ -46,11 +48,13 @@ BudgetBuddy/
 │   │   │   │   └── com/budgetbuddy/
 │   │   │   │       ├── controller/
 │   │   │   │       │   ├── AuthControllerTest.java # Unit tests for /register (implemented)
+│   │   │   │       │   ├── ProfileControllerTest.java  # NEW: Tests for /profile endpoints
 │   │   │   │       │   ├── AccountControllerTest.java
 │   │   │   │       │   ├── TransactionControllerTest.java
 │   │   │   │       │   └── DashboardControllerTest.java
 │   │   │   │       ├── service/
 │   │   │   │       │   ├── AuthServiceTest.java
+│   │   │   │       │   ├── ProfileServiceTest.java  # NEW: Optional tests for profile service (add if needed)
 │   │   │   │       │   ├── AccountServiceTest.java
 │   │   │   │       │   ├── TransactionServiceTest.java
 │   │   │   │       │   └── DashboardServiceTest.java
@@ -59,8 +63,8 @@ BudgetBuddy/
 │   │   │   │           ├── AccountRepositoryTest.java
 │   │   │   │           └── TransactionRepositoryTest.java
 │   │   │   └── resources/
-│   │   │       └── application-test.properties # Optional test config for SQLite
-│   ├── pom.xml                                 # Maven configuration (updated for SQLite)
+│   │   │       └── application-test.properties # Optional test config for SQLite/H2
+│   ├── pom.xml                                 # Maven configuration (updated for SQLite/PostgreSQL)
 │   └── README.md                              # Backend documentation
 │
 ├── frontend/                                   # React frontend
@@ -94,15 +98,15 @@ BudgetBuddy/
 │   │   │   │   ├── SpendingPieChart.js
 │   │   │   │   └── IncomeExpenseBarChart.js
 │   │   │   └── Profile/
-│   │   │       └── ProfilePage.js
+│   │   │       └── ProfilePage.js  # UPDATE: Add profile update forms here for frontend integration
 │   │   ├── pages/
 │   │   │   ├── SignupPage.js
 │   │   │   ├── LoginPage.js
 │   │   │   ├── DashboardPage.js
 │   │   │   ├── TransactionHistoryPage.js
-│   │   │   └── ProfilePage.js
+│   │   │   └── ProfilePage.js  # UPDATE: Link to ProfilePage.js for /profile endpoints
 │   │   ├── services/
-│   │   │   ├── api.js
+│   │   │   ├── api.js  # UPDATE: Add calls to /api/profile endpoints
 │   │   │   └── authService.js
 │   │   ├── utils/
 │   │   │   ├── validation.js
@@ -116,11 +120,11 @@ BudgetBuddy/
 │   └── README.md
 │
 ├── db/                                        # Database-related files
-│   ├── schema.dbml                            # Database schema definition (updated for SQLite)
+│   ├── schema.dbml                            # Database schema definition (updated for SQLite/PostgreSQL)
 │   ├── migrations/
-│   │   ├── V1__create_users_table.sql         # SQLite users table (implemented)
-│   │   ├── V2__create_accounts_table.sql      # SQLite accounts table
-│   │   └── V3__create_transactions_table.sql  # SQLite transactions table
+│   │   ├── V1__create_users_table.sql         # SQLite/PostgreSQL users table (implemented)
+│   │   ├── V2__create_accounts_table.sql      # SQLite/PostgreSQL accounts table
+│   │   └── V3__create_transactions_table.sql  # SQLite/PostgreSQL transactions table
 │   └── seed.sql                               # Optional seed data
 │
 ├── docker/                                    # Docker configuration
@@ -130,6 +134,6 @@ BudgetBuddy/
 │
 ├── .gitignore
 ├── how-to.txt
-├── .env
+├── .env  # OPTIONAL: If using env vars for jwt.secret in production
 ├── README.md                                  # Project-wide documentation
 └── LICENSE
