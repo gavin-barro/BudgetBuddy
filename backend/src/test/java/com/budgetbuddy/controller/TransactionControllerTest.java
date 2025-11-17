@@ -16,7 +16,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -41,6 +43,7 @@ public class TransactionControllerTest {
 
     private UserEntity testUser;
     private AccountEntity testAccount;
+    private TransactionEntity testTransaction;
 
     @BeforeEach
     public void setup() {
@@ -145,5 +148,78 @@ public class TransactionControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(transactionDTO)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(username = "john.doe@example.com")
+    public void testUpdateTransactionSuccess() throws Exception {
+        // Create initial transaction
+        TransactionDTO createDTO = new TransactionDTO();
+        createDTO.setAccountId(testAccount.getId());
+        createDTO.setAmount(50.0);
+        createDTO.setType("expense");
+        createDTO.setCategory("Food");
+        createDTO.setDate("2023-10-01");
+
+        mockMvc.perform(post("/api/transactions")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(createDTO)))
+                .andExpect(status().isCreated());
+
+        testTransaction = transactionRepository.findAll().get(0);
+        Long transactionId = testTransaction.getId();
+
+        // Verify initial balance decreased
+        testAccount = accountRepository.findById(testAccount.getId()).orElse(null);
+        assertEquals(-50.0, testAccount.getBalance());
+
+        // Update to income with higher amount
+        TransactionDTO updateDTO = new TransactionDTO();
+        updateDTO.setAmount(200.0);
+        updateDTO.setType("income");
+        updateDTO.setCategory("Bonus");
+        updateDTO.setDate("2023-10-02");
+
+        mockMvc.perform(put("/api/transactions/" + transactionId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateDTO)))
+                .andExpect(status().isOk());
+
+        // Verify balance adjusted: revert -50 (add 50), add +200 = +150 from original 0
+        testAccount = accountRepository.findById(testAccount.getId()).orElse(null);
+        assertEquals(150.0, testAccount.getBalance());
+    }
+
+    @Test
+    @WithMockUser(username = "john.doe@example.com")
+    public void testDeleteTransactionSuccess() throws Exception {
+        // Create initial transaction
+        TransactionDTO createDTO = new TransactionDTO();
+        createDTO.setAccountId(testAccount.getId());
+        createDTO.setAmount(75.0);
+        createDTO.setType("expense");
+        createDTO.setCategory("Rent");
+        createDTO.setDate("2023-10-01");
+
+        mockMvc.perform(post("/api/transactions")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(createDTO)))
+                .andExpect(status().isCreated());
+
+        testTransaction = transactionRepository.findAll().get(0);
+        Long transactionId = testTransaction.getId();
+
+        // Verify initial balance decreased
+        testAccount = accountRepository.findById(testAccount.getId()).orElse(null);
+        assertEquals(-75.0, testAccount.getBalance());
+
+        // Delete transaction
+        mockMvc.perform(delete("/api/transactions/" + transactionId))
+                .andExpect(status().isOk());
+
+        // Verify balance reverted to original
+        testAccount = accountRepository.findById(testAccount.getId()).orElse(null);
+        assertEquals(0.0, testAccount.getBalance());
+        assertEquals(0, transactionRepository.findAll().size());
     }
 }
