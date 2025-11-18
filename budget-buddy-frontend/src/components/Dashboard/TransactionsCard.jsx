@@ -1,12 +1,15 @@
 import React from 'react';
 
-const currency = (n) => (n < 0 ? `-$${Math.abs(n).toFixed(2)}` : `$${n.toFixed(2)}`);
+const currency = (n) => {
+  const v = Number(n) || 0;
+  return v < 0 ? `-$${Math.abs(v).toFixed(2)}` : `$${v.toFixed(2)}`;
+};
 
-const TransactionsCard = ({ transactions = [], accounts = [] }) => {
-  const byId = Object.fromEntries(accounts.map((a) => [a.id, a]));
+export default function TransactionsCard({ transactions = [], accounts = [] }) {
+  const byId = Object.fromEntries(accounts.map((a) => [String(a.id), a]));
   const recent = [...transactions]
     .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
-    .slice(0, 7); // show most recent 7 if dates exist; order is stable for demo
+    .slice(0, 7);
 
   return (
     <section className="card">
@@ -17,19 +20,18 @@ const TransactionsCard = ({ transactions = [], accounts = [] }) => {
         {recent.map((t) => (
           <li key={t.id} className="list-row">
             <div className="list-main">
-              <div className="list-title">{t.name}</div>
+              <div className="list-title">{t.description || '(No description)'}</div>
               <div className="list-sub">
-                <span className="tag">{t.category}</span>
+                <span className="tag">{t.category || 'Uncategorized'}</span>
                 <span className="dot" />
-                <span>{byId[t.accountId]?.name || t.account || 'Unknown Account'}</span>
+                <span>{byId[String(t.account_id)]?.name || 'Unknown Account'}</span>
+                {t.date ? (<><span className="dot" /><span>{t.date}</span></>) : null}
               </div>
             </div>
-            <div className={`amount ${t.amount < 0 ? 'neg' : 'pos'}`}>{currency(Number(t.amount) || 0)}</div>
+            <div className={`amount ${Number(t.amount) < 0 ? 'neg' : 'pos'}`}>{currency(t.amount)}</div>
           </li>
         ))}
       </ul>
     </section>
   );
-};
-
-export default TransactionsCard;
+}

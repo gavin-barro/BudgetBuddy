@@ -7,6 +7,7 @@ import AccountsPage from './pages/AccountsPage';
 import Navbar from './components/Navbar/Navbar';
 import AccountManagementService from './api/AccountManagementService';
 import './index.css';
+import TransactionsPage from './pages/TransactionsPage';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -94,8 +95,13 @@ function App() {
         onNavigate={setActiveView}
         onLogout={handleLogout}
       />
+
       <div className="page-shell">
         {activeView === 'dashboard' && <DashboardPage user={currentUser} accounts={accounts} />}
+        {activeView === 'transactions' && (
+          <TransactionsPage user={currentUser} accounts={accounts} />
+        )}
+
         {activeView === 'accounts' && (
           <AccountsPage
             accounts={accounts}
@@ -104,6 +110,7 @@ function App() {
             onAddAccount={handleAddAccount}
           />
         )}
+        
         {activeView === 'profile' && (
           <ProfilePage
             user={currentUser}

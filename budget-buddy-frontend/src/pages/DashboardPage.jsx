@@ -1,8 +1,10 @@
 import React from 'react';
+import { useEffect } from 'react';
 import AccountsCard from '../components/Dashboard/AccountsCard';
 import TransactionsCard from '../components/Dashboard/TransactionsCard';
 import CategoryPieCard from '../components/Dashboard/CategoryPieCard';
 import AccountBalancesLineCard from '../components/Dashboard/AccountBalancesLineCard';
+import TransactionService from '../api/TransactionService';
 import './Dashboard.css';
 
 /**
@@ -14,6 +16,9 @@ import './Dashboard.css';
  * so it always reflects the same data as the Accounts page (mock API-backed).
  */
 const DashboardPage = ({ user, accounts: accountsProp }) => {
+  
+  const [transactions, setTransactions] = React.useState([]);
+
   const fallbackAccounts = [
     { id: 'acc_1', name: 'Everyday Checking', type: 'Checking', balance: 1425.32 },
     { id: 'acc_2', name: 'Vacation Savings', type: 'Savings', balance: 5200.0 },
@@ -33,10 +38,22 @@ const DashboardPage = ({ user, accounts: accountsProp }) => {
     (Array.isArray(user?.accounts) && user.accounts.length && user.accounts) ||
     fallbackAccounts;
 
-  const transactions =
-    Array.isArray(user?.transactions) && user.transactions.length
-      ? user.transactions
-      : fallbackTransactions;
+  async function loadRecent() {
+    try {
+      const { rows } = await TransactionService.list({ sort: 'date:desc', page: 1, pageSize: 5});
+      setTransactions(rows);
+    } catch (e) {
+      console.error('Failed to load recent transactions', e);
+      setTransactions(
+        (Array.isArray(user?.transactions) && user.transactions.slice(0, 5)) ||
+        fallbackTransactions
+      );
+    }
+  }
+  useEffect(() => {
+    TransactionService.seedIfEmpty();
+    loadRecent();
+  }, []);
 
   return (
     <div className="db-container">
