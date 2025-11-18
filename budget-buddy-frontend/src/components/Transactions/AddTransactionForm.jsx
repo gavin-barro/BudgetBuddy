@@ -1,100 +1,159 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './AddTransactionForm.css';
 
-/**
-* Props:
-* - open, onCancel
-* - onSubmit: (txnDraft) => void
-* - accounts: [{id, name}]
-* - categories?: string[]
-*/
-const DEFAULT_CATEGORIES = [
-    'Income',
-    'Food & Dining',
-    'Transportation',
-    'Housing',
-    'Utilities',
-    'Health & Fitness',
-    'Shopping',
-    'Entertainment',
-    'Debt',
-    'Other',
-];
+export default function AddTransactionForm({
+  open,
+  onCancel,
+  onSubmit,
+  accounts = [],
+  initialValues = null,   // NEW
+}) {
+  const [date, setDate] = useState('');
+  const [description, setDescription] = useState('');
+  const [amount, setAmount] = useState('');
+  const [type, setType] = useState('expense');
+  const [category, setCategory] = useState('Other');
+  const [accountId, setAccountId] = useState('');
 
-export default function AddTransactionForm({ open, onCancel, onSubmit, accounts = [], categories = DEFAULT_CATEGORIES }) {
-    const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-    const [description, setDescription] = useState('');
-    const [amount, setAmount] = useState('');
-    const [type, setType] = useState('expense');
-    const [category, setCategory] = useState('Other');
-    const [accountId, setAccountId] = useState('');
+  /**
+   * Prefill when modal opens
+   */
+  useEffect(() => {
+    if (!open) return;
 
-    const wasOpenRef = React.useRef(false);
-    useEffect(() => {
-        if (open && !wasOpenRef.current) {
-            setDate(new Date().toISOString().slice(0, 10));
-            setDescription('');
-            setAmount('');
-            setType('expense');
-            setCategory('Other');
-            setAccountId(accounts[0]?.id || '');
-        }
-        wasOpenRef.current = open;
-    }, [open, accounts]);
+    const today = new Date().toISOString().slice(0, 10);
 
+    if (initialValues) {
+      // EDIT MODE
+      setDate(initialValues.date || today);
+      setDescription(initialValues.description || '');
+      setAmount(
+        initialValues.amount !== undefined && initialValues.amount !== null
+          ? String(initialValues.amount)
+          : ''
+      );
+      setType(initialValues.type || 'expense');
+      setCategory(initialValues.category || 'Other');
+      setAccountId(initialValues.account_id || accounts[0]?.id || '');
+    } else {
+      // ADD MODE
+      setDate(today);
+      setDescription('');
+      setAmount('');
+      setType('expense');
+      setCategory('Other');
+      setAccountId(accounts[0]?.id || '');
+    }
+  }, [open, initialValues, accounts]);
 
-    const numericAmount = useMemo(() => Number(amount || 0), [amount]);
-    const canSubmit = description.trim() && accountId && !Number.isNaN(numericAmount) && numericAmount !== 0;
+  /**
+   * Submit handler
+   */
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const numericAmount = Number(amount || 0);
 
-    if (!open) return null;
+    onSubmit?.({
+      date,
+      description: description.trim(),
+      amount: numericAmount,
+      type,
+      category,
+      account_id: accountId,
+    });
+  };
 
-    const submit = (e) => {
-        e.preventDefault();
-        if (!canSubmit) return;
-        onSubmit?.({ date, description: description.trim(), amount: numericAmount, type, category, account_id: accountId });
-    };
-    return (
-        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Add Transaction">
-            <div className="modal-panel">
-                <header className="modal-header"><h3>Add Transaction</h3></header>
-                <form onSubmit={submit} className="modal-body">
-                    <label className="field">
-                        <span className="label">Date</span>
-                        <input className="input-like" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-                    </label>
-                    <label className="field">
-                        <span className="label">Description</span>
-                        <input className="input-like" placeholder="e.g., Groceries" value={description} onChange={(e) => setDescription(e.target.value)} />
-                    </label>
-                    <label className="field">
-                        <span className="label">Amount</span>
-                        <input className="input-like" type="number" step="0.01" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} />
-                    </label>
-                    <label className="field">
-                        <span className="label">Type</span>
-                        <select className="select-like" value={type} onChange={(e) => setType(e.target.value)}>
-                            <option value="expense">Expense</option>
-                            <option value="income">Income</option>
-                        </select>
-                    </label>
-                    <label className="field">
-                        <span className="label">Category</span>
-                        <select className="select-like" value={category} onChange={(e) => setCategory(e.target.value)}>
-                            {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                    </label>
-                    <label className="field">
-                        <span className="label">Account</span>
-                        <select className="select-like" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
-                            {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                        </select>
-                    </label>
-                    <div className="modal-actions">
-                        <button type="button" className="tab" onClick={onCancel}>Cancel</button>
-                        <button type="submit" className={`tab ${canSubmit ? 'active' : ''}`} disabled={!canSubmit}>Add</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    );
+  if (!open) return null;
+
+  return (
+    <div className="modal-backdrop">
+      <div className="modal">
+        <header className="modal-header">
+          <h3>{initialValues ? 'Edit Transaction' : 'Add Transaction'}</h3>
+          <button className="close-btn" onClick={onCancel}>✕</button>
+        </header>
+
+        <form className="modal-body" onSubmit={handleSubmit}>
+          <label className="form-label">Date</label>
+          <input
+            type="date"
+            className="input-like"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            required
+          />
+
+          <label className="form-label">Description</label>
+          <input
+            type="text"
+            className="input-like"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            required
+          />
+
+          <label className="form-label">Amount</label>
+          <input
+            type="number"
+            className="input-like"
+            step="0.01"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            required
+          />
+
+          <label className="form-label">Type</label>
+          <select
+            className="select-like"
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+          >
+            <option value="expense">Expense</option>
+            <option value="income">Income</option>
+          </select>
+
+          <label className="form-label">Category</label>
+          <select
+            className="select-like"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            <option>Income</option>
+            <option>Food & Dining</option>
+            <option>Transportation</option>
+            <option>Housing</option>
+            <option>Utilities</option>
+            <option>Health & Fitness</option>
+            <option>Shopping</option>
+            <option>Entertainment</option>
+            <option>Debt</option>
+            <option>Other</option>
+          </select>
+
+          <label className="form-label">Account</label>
+          <select
+            className="select-like"
+            value={accountId}
+            onChange={(e) => setAccountId(e.target.value)}
+            required
+          >
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+              </option>
+            ))}
+          </select>
+
+          <footer className="modal-footer">
+            <button type="button" className="cancel-btn" onClick={onCancel}>
+              Cancel
+            </button>
+            <button type="submit" className="confirm-btn">
+              {initialValues ? 'Update' : 'Add'}
+            </button>
+          </footer>
+        </form>
+      </div>
+    </div>
+  );
 }

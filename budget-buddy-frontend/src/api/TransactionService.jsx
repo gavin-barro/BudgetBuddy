@@ -1,121 +1,127 @@
-// Lightweight mock API using localStorage
+// src/api/TransactionService.jsx
 
-const LS_KEY = 'bb.transactions.v1';
+import apiClient from './apiClient';
 
-function readAll() {
-    try {
-        const raw = localStrorage.getItem(LS_KEY);
-        const arr = raw ? JSON.parse(raw) : [];
-        return Array.isArray(arr) ? arr : [];
-    } catch {
-        return [];
+const applyFilters = (rows, { accountId, category, type, dateFrom, dateTo, search }) => {
+  return rows.filter((r) => {
+    if (accountId && String(r.account_id) !== String(accountId)) return false;
+    if (category && category !== 'All' && r.category !== category) return false;
+    if (type && type !== 'All' && r.type !== type.toLowerCase()) return false;
+    if (dateFrom && r.date < dateFrom) return false;
+    if (dateTo && r.date > dateTo) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      const hay = `${r.description} ${r.category} ${r.type}`.toLowerCase();
+      if (!hay.includes(q)) return false;
     }
+    return true;
+  });
+};
+
+const applySort = (rows, sortKey) => {
+  const [key, dir] = (sortKey || 'date:desc').split(':');
+  const sign = dir === 'asc' ? 1 : -1;
+  const cmp = (a, b) => {
+    const va = a[key];
+    const vb = b[key];
+    if (key === 'amount') return sign * (Number(va) - Number(vb));
+    return sign * String(va).localeCompare(String(vb));
+  };
+  return [...rows].sort(cmp);
+};
+
+// Map from backend transaction -> frontend row shape
+function normalizeFromApi(txn) {
+  if (!txn) return null;
+  // Adjust these field names if your backend uses different ones
+  const id = txn.id;
+  const accountId = txn.accountId ?? txn.account_id;
+  const amount = Number(txn.amount ?? 0);
+  // Backend likely uses enum "INCOME"/"EXPENSE"
+  const type = String(txn.type || 'expense').toLowerCase();
+  const category = txn.category || 'Other';
+  const description = txn.description || '';
+  // assume ISO date / datetime; keep just YYYY-MM-DD for the UI
+  const rawDate = txn.date || txn.transactionDate || new Date().toISOString();
+  const date = rawDate.slice(0, 10);
+
+  return {
+    id,
+    account_id: String(accountId ?? ''),
+    amount,
+    type,
+    category,
+    date,
+    description,
+  };
 }
 
-function writeAll(rows) {
-    localStorage.setItem(LS_KEY, JSON.stringify(rows));
-}
+// Map from frontend draft/patch -> backend payload
+function toApiPayload(draftOrPatch) {
+  if (!draftOrPatch) return {};
+  const {
+    id,
+    account_id,
+    accountId,
+    amount,
+    type,
+    category,
+    date,
+    description,
+    ...rest
+  } = draftOrPatch;
 
-function uid() {
-    return 'txn_' + Math.random().toString(36).slice(2, 10);
-}
-
-function normalize(txn) {
-    // Ensure types are consistent
-    return {
-        id: txn.id || uid(),
-        account_id: String(txn.account_id || ''),
-        user_id: txn.user_id || 'local-user',
-        amount: Number(txn.amount || 0),
-        type: (txn.type || 'expense').toLowerCase(), // 'income' | 'expense'
-        category: txn.category || 'Uncategorized',
-        date: txn.date || new Date().toISOString().slice(0, 10), // YYYY-MM-DD
-        description: txn.description || '',
-        created_at: txn.created_at || new Date().toISOString(),
-    };
-}
-
-function applyFilters(rows, { accountId, category, type, dateFrom, dateTo, search }) {
-    return rows.filter(r => {
-        if (accountId && String(r.account_id) !== String(accountId)) return false;
-        if (category && category !== 'All' && r.category !== category) return false;
-        if (type && type !== 'All' && r.type !== type.toLowerCase()) return false;
-        if (dateFrom && r.date < dateFrom) return false;
-        if (dateTo && r.date > dateTo) return false;
-        if (search) {
-            const q = search.toLowerCase();
-            const hay = `${r.description} ${r.category} ${r.type}`.toLowerCase();
-            if (!hay.includes(q)) return false;
-        }
-        return true;
-    });
-}
-
-function applySort(rows, sortKey) {
-    const [key, dir] = (sortKey || 'date:desc').split(':');
-    const sign = dir === 'asc' ? 1 : -1;
-    const cmp = (a, b) => {
-        const va = a[key];
-        const vb = b[key];
-        if (key === 'amount') return sign * (va - vb);
-        return sign * String(va).localeCompare(String(vb));
-    };
-    return [...rows].sort(cmp);
+  return {
+    id,
+    accountId: accountId ?? account_id,                 // backend expects accountId
+    amount,
+    type: type ? String(type).toUpperCase() : undefined, // "INCOME" / "EXPENSE"
+    category,
+    date,                                                // YYYY-MM-DD (backend can parse or treat as LocalDate)
+    description,
+    ...rest,
+  };
 }
 
 const TransactionService = {
-    seedIfEmpty() {
-        const rows = readAll();
-        if (rows.length) return;
-        writeAll([
-            {
-                id: uid(), account_id: 'acc_1', user_id: 'local-user', amount: -82.45, type: 'expense',
-                category: 'Food & Dining', date: '2025-10-18', description: 'Groceries', created_at: new Date().toISOString(),
-            },
-            {
-                id: uid(), account_id: 'acc_1', user_id: 'local-user', amount: 1850.0, type: 'income',
-                category: 'Income', date: '2025-10-15', description: 'Paycheck', created_at: new Date().toISOString(),
-            },
-            {
-                id: uid(), account_id: 'acc_2', user_id: 'local-user', amount: -44.1, type: 'expense',
-                category: 'Transportation', date: '2025-10-12', description: 'Gas', created_at: new Date().toISOString(),
-            },
-        ]);
-    },
-    async list({ filters = {}, sort = 'date:desc', page = 1, pageSize = 10 } = {}) {
-        const rows = readAll();
-        const filtered = applyFilters(rows, filters);
-        const sorted = applySort(filtered, sort);
-        const total = sorted.length;
-        const start = (page - 1) * pageSize;
-        const end = start + pageSize;
-        const pageRows = sorted.slice(start, end);
-        return { rows: pageRows, total, page, pageSize };
-    },
-    
-    async create(txnDraft) {
-        const rows = readAll();
-        const row = normalize(txnDraft);
-        rows.push(row);
-        writeAll(rows);
-        return row;
-    },
+  // Keep this so TransactionsPage can still call it, but do nothing now.
+  seedIfEmpty() {
+    // no-op: data comes from backend now
+  },
 
-    async update(id, patch) {
-        const rows = readAll();
-        const idx = rows.findIndex(r => r.id === id);
-        if (idx === -1) throw new Error('Transaction not found');
-        rows[idx] = normalize({ ...rows[idx], ...patch, id });
-        writeAll(rows);
-        return rows[idx];
-    },
+  // Fetch all transactions from backend, then filter/sort/paginate on the client
+  async list({ filters = {}, sort = 'date:desc', page = 1, pageSize = 10 } = {}) {
+    // Adjust URL if your controller maps differently
+    const data = await apiClient.get('/api/transactions');
+    const all = Array.isArray(data) ? data.map(normalizeFromApi).filter(Boolean) : [];
 
-    async remove(id) {
-        const rows = readAll();
-        const next = rows.filter(r => r.id !== id);
-        writeAll(next);
-        return { ok: true };
-    },
+    const filtered = applyFilters(all, filters);
+    const sorted = applySort(filtered, sort);
+
+    const total = sorted.length;
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+    const pageRows = sorted.slice(start, end);
+
+    return { rows: pageRows, total, page, pageSize };
+  },
+
+  async create(txnDraft) {
+    const payload = toApiPayload(txnDraft);
+    const created = await apiClient.post('/api/transactions', payload);
+    return normalizeFromApi(created);
+  },
+
+  async update(id, patch) {
+    const payload = toApiPayload({ ...patch, id });
+    const updated = await apiClient.put(`/api/transactions/${id}`, payload);
+    return normalizeFromApi(updated);
+  },
+
+  async remove(id) {
+    await apiClient.delete(`/api/transactions/${id}`);
+    return { ok: true };
+  },
 };
 
 export default TransactionService;
