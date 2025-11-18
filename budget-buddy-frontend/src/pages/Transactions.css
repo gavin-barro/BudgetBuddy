@@ -1,0 +1,146 @@
+/* Transactions.css */
+/* Tokens from App.css */
+:root {
+  --violet-600: #5b21b6;
+  --text-600: #4b5563;
+  --glass-border: rgba(0, 0, 0, 0.12);
+}
+
+/* Page wrapper */
+.tx-card {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* =========================================
+== MODIFIED FILTERS SECTION ==
+=========================================
+*/
+
+/* 1. The main grid: 6 items in 3 columns */
+.filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(140px, 1fr));
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+/* 2. Base style for inputs/selects (Unchanged) */
+.filters .input-like,
+.filters .select-like {
+  height: 38px;
+  border: 2px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 6px 10px;
+}
+
+/* 3. The "to" text (Unchanged) */
+.filters-sep {
+  text-align: center;
+  color: var(--text-600);
+}
+
+/* =========================================
+== NEW GROUP STYLES ==
+=========================================
+*/
+
+/* 4. New group for the date range */
+.filter-group-date {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr; /* [Date] [to] [Date] */
+  align-items: center;
+  gap: 8px;
+}
+
+/* 5. New group for the controls */
+.filter-group-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Was: auto 1fr 1fr */
+  align-items: center;
+  gap: 10px;
+}
+
+/* 6. Helper to make inputs/buttons inside groups fill their grid cells */
+.filter-group-date .input-like,
+.filter-group-controls .select-like,
+.filter-group-controls .tab {
+  width: 100%;
+  box-sizing: border-box; /* Ensures padding doesn't break layout */
+}
+
+.filter-reset-row {
+  /* This tells the item to span all 3 columns of the main .filters grid */
+  grid-column: 1 / -1;
+
+  /* This will center the button within the row */
+  display: flex;
+  justify-content: left;
+  margin-top: 8px; /* Adds a nice bit of space above the button */
+}
+
+/* Optional: Give the button a set width */
+.filter-reset-row .tab {
+  width: 200px; 
+}
+
+/* =========================================
+== UNCHANGED ORIGINAL STYLES ==
+=========================================
+*/
+
+/* Buttons consistent with theme */
+.tab {
+  border: 1.5px solid var(--violet-600);
+  background: transparent;
+  padding: 6px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--violet-600);
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.tab:hover { background: rgba(124, 58, 237, 0.08); }
+.tab.active { background: var(--violet-600); color: #fff; }
+
+/* Table density (Unchanged) */
+.ap-table thead th,
+.ap-table .ap-cell {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+/* Pagination (Unchanged) */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  border-top: 1px dashed rgba(0, 0, 0, 0.06);
+  padding-top: 12px;
+}
+.pagination-left {
+  font-size: 0.9rem;
+  color: var(--text-600);
+}
+.pagination-right .tab { padding: 6px 10px; }
+
+/* =========================================
+== UPDATED RESPONSIVE BREAKPOINTS ==
+=========================================
+*/
+
+/* On tablets: 6 items flow into a 2x3 grid */
+@media (max-width: 980px) {
+  .filters { 
+    grid-template-columns: repeat(2, 1fr); 
+  }
+}
+
+/* On mobile: 6 items stack into a 1x6 grid */
+@media (max-width: 640px) {
+  .filters { 
+    grid-template-columns: 1fr; 
+  }
+}
