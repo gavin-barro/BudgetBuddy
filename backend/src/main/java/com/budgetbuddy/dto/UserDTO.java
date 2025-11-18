@@ -8,7 +8,7 @@ public class UserDTO {
 
     // Getters and setters
     public String getFirstName() {
-        return firstName;
+        return this.firstName;
     }
 
     public void setFirstName(String firstName) {
@@ -16,7 +16,7 @@ public class UserDTO {
     }
 
     public String getLastName() {
-        return lastName;
+        return this.lastName;
     }
 
     public void setLastName(String lastName) {
@@ -24,7 +24,7 @@ public class UserDTO {
     }
 
     public String getEmail() {
-        return email;
+        return this.email;
     }
 
     public void setEmail(String email) {
@@ -32,7 +32,7 @@ public class UserDTO {
     }
 
     public String getPassword() {
-        return password;
+        return this.password;
     }
 
     public void setPassword(String password) {
