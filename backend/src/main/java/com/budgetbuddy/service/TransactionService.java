@@ -14,6 +14,15 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
+/**
+ * adding list imports
+ */
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+
+
 @Service
 public class TransactionService {
 
@@ -25,6 +34,62 @@ public class TransactionService {
 
     @Autowired
     private AccountRepository accountRepository;
+
+    private TransactionDTO toDto(TransactionEntity entity) {
+        TransactionDTO dto = new TransactionDTO();
+        dto.setId(entity.getId());
+        dto.setAccountId(entity.getAccount().getId());
+        dto.setAmount(entity.getAmount());
+        dto.setType(entity.getType().name().toLowerCase()); // "income"/"expense"
+        dto.setCategory(entity.getCategory());
+        // assuming TransactionDTO.date is String "YYYY-MM-DD"
+        dto.setDate(entity.getDate().toLocalDate().toString());
+        dto.setDescription(entity.getDescription());
+        return dto;
+    }
+    private Sort buildSort(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) {
+            sortBy = "date_desc";
+        }
+    
+        switch (sortBy) {
+            case "date_asc":
+                return Sort.by("date").ascending();
+            case "amount_asc":
+                return Sort.by("amount").ascending();
+            case "amount_desc":
+                return Sort.by("amount").descending();
+            case "date_desc":
+            default:
+                return Sort.by("date").descending();
+        }
+    }
+    
+    public Page<TransactionDTO> getTransactions(
+        String userEmail,
+        String category,
+        String sortBy,
+        int page,
+        int limit
+) {
+    UserEntity user = userRepository.findByEmail(userEmail)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+    Sort sort = buildSort(sortBy);
+    int pageIndex = Math.max(page, 0);  // 0-based page index
+    Pageable pageable = PageRequest.of(pageIndex, limit, sort);
+
+    Page<TransactionEntity> pageResult;
+    if (category != null && !category.trim().isEmpty()) {
+        pageResult = transactionRepository
+                .findByUserIdAndCategory(user.getId(), category.trim(), pageable);
+    } else {
+        pageResult = transactionRepository
+                .findByUserId(user.getId(), pageable);
+    }
+
+    return pageResult.map(this::toDto);
+}
 
     public TransactionEntity createTransaction(String userEmail, TransactionDTO transactionDTO) {
         // Validate input (same as before)

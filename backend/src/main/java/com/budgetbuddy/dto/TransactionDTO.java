@@ -1,6 +1,7 @@
 package com.budgetbuddy.dto;
 
 public class TransactionDTO {
+    private Long id;
     private Long accountId;
     private Double amount;
     private String type; // 'income' or 'expense'
@@ -55,5 +56,11 @@ public class TransactionDTO {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+    public Long getId() {
+        return id;
+    }
+    public void setId(Long id) {
+        this.id = id;
     }
 }
