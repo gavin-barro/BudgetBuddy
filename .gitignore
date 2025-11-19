@@ -9,7 +9,7 @@ backend/src/test/resources/application-test.properties
 .idea
 backend/target
 backend/src/test/resources/application-test.properties
-
+.DS_Store
 
 ### Maven ###
 target/
