@@ -25,7 +25,7 @@ const LoginForm = ({ onSwitch, onSuccess }) => {
       const user = await login(email, password);
       
       // --- SUCCESS ALERT ---
-      alert(`Login Successful! Welcome back, ${user.firstName}.`);
+      alert(`Login Successful! Welcome back, ${user.email}.`);
 
       if (form.remember) {
         localStorage.setItem('bb_remember', '1');

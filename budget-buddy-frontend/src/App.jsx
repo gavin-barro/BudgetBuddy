@@ -1,79 +1,188 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import AuthenticationPage from './pages/AuthenticationPage';
 import ProfilePage from './pages/ProfilePage';
 import DashboardPage from './pages/DashboardPage';
 import AccountsPage from './pages/AccountsPage';
 import Navbar from './components/Navbar/Navbar';
 import AccountManagementService from './api/AccountManagementService';
+import TransactionService from './api/TransactionService';
 import './index.css';
+import TransactionsPage from './pages/TransactionsPage';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
-  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard' | 'accounts' | 'profile'
+  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard' | 'accounts' | 'transactions' | 'profile'
 
-  // --- BYPASS AUTH FOR TESTING ---
+  // Global state: accounts and transactions
+  const [accounts, setAccounts] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+
+  // --------------------------------------------------
+  // Shared loaders
+  // --------------------------------------------------
+  const fetchAccounts = useCallback(async () => {
+    if (!currentUser) {
+      setAccounts([]);
+      return;
+    }
+
+    try {
+      const rows = await AccountManagementService.list();
+      setAccounts(rows);
+      // keep currentUser.accounts in sync if it exists
+      setCurrentUser((prev) =>
+        prev ? { ...prev, accounts: rows } : prev
+      );
+    } catch (e) {
+      console.error('Failed to load accounts', e);
+    }
+  }, [currentUser]);
+
+  const fetchTransactions = useCallback(async () => {
+    if (!currentUser) {
+      setTransactions([]);
+      return;
+    }
+
+    try {
+      // Use TransactionService.list which returns { rows, total, page, pageSize }
+      // Request a reasonably large page so the client-side filters/paging
+      // in TransactionsPage can work with the full list.
+      const result = await TransactionService.list({
+        filters: {},
+        sort: 'date:desc',
+        page: 1,
+        pageSize: 500,
+      });
+      const rows = result?.rows ?? result ?? [];
+      setTransactions(rows);
+    } catch (e) {
+      console.error('Failed to load transactions', e);
+    }
+  }, [currentUser]);
+
+  // When the user logs in/out, pull accounts + transactions
   useEffect(() => {
-    const dummyUser = {
-      firstName: 'Test',
-      lastName: 'User',
-      email: 'test@example.com',
-      accounts: [
-        { id: 'acc_1', name: 'Checking', type: 'Checking', balance: 1200 },
-        { id: 'acc_2', name: 'Savings', type: 'Savings', balance: 5000 },
-      ],
-      transactions: [
-        { id: 't1', name: 'Groceries', category: 'Food', accountId: 'acc_1', amount: -50 },
-        { id: 't2', name: 'Paycheck', category: 'Recreation', accountId: 'acc_1', amount: 2000 },
-      ],
-    };
+    fetchAccounts();
+    fetchTransactions();
+  }, [fetchAccounts, fetchTransactions]);
 
-    setCurrentUser(dummyUser);
-    // Seed mock store once, then load accounts from the service so all pages are in sync
-    AccountManagementService.seedFromUser(dummyUser);
-    AccountManagementService.list(dummyUser).then((accounts) => {
-      setCurrentUser((u) => ({ ...u, accounts }));
-    });
-  }, []);
-
-  // --- Handlers using the mock API service ---
+  // --------------------------------------------------
+  // Account handlers (unchanged)
+  // --------------------------------------------------
   const handleAddAccount = async (draft) => {
-    if (!currentUser) return;
-    const res = await AccountManagementService.create(currentUser, draft);
-    if (res?.accounts) {
-      setCurrentUser((u) => ({ ...u, accounts: res.accounts }));
+    try {
+      const res = await AccountManagementService.create(draft);
+      if (res?.accounts) {
+        setAccounts(res.accounts);
+        setCurrentUser((prev) =>
+          prev ? { ...prev, accounts: res.accounts } : prev
+        );
+      } else {
+        // Fallback: re-fetch if service didn't return accounts
+        await fetchAccounts();
+      }
+    } catch (e) {
+      console.error(e);
+      alert(e?.message || 'Failed to add account');
     }
   };
 
   const handleAccountUpdate = async (id, patch) => {
-    if (!currentUser) return;
-    const res = await AccountManagementService.update(currentUser, id, patch);
-    if (res?.accounts) {
-      setCurrentUser((u) => ({ ...u, accounts: res.accounts }));
+    try {
+      const res = await AccountManagementService.update(id, patch);
+      if (res?.accounts) {
+        setAccounts(res.accounts);
+        setCurrentUser((prev) =>
+          prev ? { ...prev, accounts: res.accounts } : prev
+        );
+      } else {
+        await fetchAccounts();
+      }
+    } catch (e) {
+      console.error(e);
+      alert(e?.message || 'Failed to update account');
     }
   };
 
   const handleAccountDelete = async (id) => {
-    if (!currentUser) return;
-    const res = await AccountManagementService.remove(currentUser, id);
-    if (res?.accounts) {
-      // Also remove transactions tied to that account on the client (optional convenience)
-      setCurrentUser((u) => ({
-        ...u,
-        accounts: res.accounts,
-        transactions: (u.transactions || []).filter((t) => t.accountId !== id),
-      }));
+    try {
+      const res = await AccountManagementService.remove(id);
+      if (res?.accounts) {
+        setAccounts(res.accounts);
+        setCurrentUser((prev) =>
+          prev ? { ...prev, accounts: res.accounts } : prev
+        );
+      } else {
+        await fetchAccounts();
+      }
+
+      // If your backend also modifies transactions when an account is deleted,
+      // you *can* refresh transactions here:
+      // await fetchTransactions();
+    } catch (e) {
+      console.error(e);
+      alert(e?.message || 'Failed to delete account');
+    }
+  };
+
+  // --------------------------------------------------
+  // Transaction handlers (real-time updates)
+  // --------------------------------------------------
+  const handleAddTransaction = async (draft) => {
+    try {
+      const created = await TransactionService.create(draft);
+      if (created) {
+        // Optimistic local update so UI feels instant
+        setTransactions((prev) => [...prev, created]);
+        // Then refresh account balances so dashboards stay in sync
+        await fetchAccounts();
+      }
+    } catch (e) {
+      console.error(e);
+      alert(e?.message || 'Failed to add transaction');
+    }
+  };
+
+  const handleUpdateTransaction = async (id, patch) => {
+    try {
+      const updated = await TransactionService.update(id, patch);
+      if (updated) {
+        setTransactions((prev) =>
+          prev.map((t) => (t.id === id ? updated : t))
+        );
+        await fetchAccounts();
+      }
+    } catch (e) {
+      console.error(e);
+      alert(e?.message || 'Failed to update transaction');
+    }
+  };
+
+  const handleDeleteTransaction = async (id) => {
+    try {
+      const result = await TransactionService.remove(id);
+      if (result?.ok || result === undefined) {
+        setTransactions((prev) => prev.filter((t) => t.id !== id));
+        await fetchAccounts();
+      }
+    } catch (e) {
+      console.error(e);
+      alert(e?.message || 'Failed to delete transaction');
     }
   };
 
   const handleUserUpdate = (updatedUser) => setCurrentUser(updatedUser);
+
   const handleLogout = () => {
     setCurrentUser(null);
-    // If you were persisting auth, you’d clear tokens/localStorage here.
+    setAccounts([]);
+    setTransactions([]);
+    // TODO: clear any persisted auth (localStorage/session) if you use it
   };
 
-
+  // Until a user is authenticated, show the auth page
   if (!currentUser) {
-    // keep your old path available when you disable bypass
     return <AuthenticationPage onAuthSuccess={setCurrentUser} />;
   }
 
@@ -85,16 +194,36 @@ function App() {
         onNavigate={setActiveView}
         onLogout={handleLogout}
       />
+
       <div className="page-shell">
-        {activeView === 'dashboard' && <DashboardPage user={currentUser} />}
-        {activeView === 'accounts' && (
-          <AccountsPage
-            accounts={currentUser.accounts}
-            onUpdateAccount={handleAccountUpdate}
-            onDeleteAccount={handleAccountDelete}
-            onAddAccount={handleAddAccount}
+        {activeView === 'dashboard' && (
+          <DashboardPage
+            user={currentUser}
+            accounts={accounts}
+            transactions={transactions}
           />
         )}
+
+        {activeView === 'transactions' && (
+          <TransactionsPage
+            user={currentUser}
+            accounts={accounts}
+            transactions={transactions}
+            onAddTransaction={handleAddTransaction}
+            onUpdateTransaction={handleUpdateTransaction}
+            onDeleteTransaction={handleDeleteTransaction}
+          />
+        )}
+
+        {activeView === 'accounts' && (
+          <AccountsPage
+            accounts={accounts}
+            onAddAccount={handleAddAccount}
+            onUpdateAccount={handleAccountUpdate}
+            onDeleteAccount={handleAccountDelete}
+          />
+        )}
+
         {activeView === 'profile' && (
           <ProfilePage
             user={currentUser}

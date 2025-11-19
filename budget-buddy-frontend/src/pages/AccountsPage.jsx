@@ -1,24 +1,26 @@
+// src/pages/AccountsPage.jsx
 import React, { useState } from 'react';
-import './Dashboard.css';      // keep shared glass/card styles
-import './AccountsPage.css';   // new page-specific styles
+import './Dashboard.css';
+import './AccountsPage.css';
 import AddAccountForm from '../components/Accounts/AddAccountForm';
 
 const currency = (n) => {
-    const absVal = Math.abs(n);
+    const absVal = Math.abs(Number(n) || 0);
     const formatted = absVal.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
     });
-    return n < 0 ? `-$${formatted}` : `$${formatted}`;
-  };
+    return (Number(n) || 0) < 0 ? `-$${formatted}` : `$${formatted}`;
+};
 
-/**
- * Props:
- *  - accounts: Array<{ id, name, type, balance }>
- *  - onUpdateAccount: (id, patch) => void
- *  - onDeleteAccount: (id) => void
- *  - onAddAccount: (draft) => void   // draft = { name, type, balance }
- */
+// Canonical options for editing
+const ACCOUNT_TYPES = [
+    { value: 'checking', label: 'Checking' },
+    { value: 'savings', label: 'Savings' },
+    { value: 'credit', label: 'Credit Card' },
+    { value: 'other', label: 'Other' },
+];
+
 export default function AccountsPage({
     accounts = [],
     onUpdateAccount,
@@ -26,32 +28,35 @@ export default function AccountsPage({
     onAddAccount,
 }) {
     const [editingId, setEditingId] = useState(null);
-    const [draft, setDraft] = useState({ name: '', type: '', balance: 0 });
+    const [draft, setDraft] = useState({ name: '', type: 'checking', balance: 0 });
 
     // Add-account modal
     const [showAdd, setShowAdd] = useState(false);
     const openAdd = () => setShowAdd(true);
     const closeAdd = () => setShowAdd(false);
     const handleAddSubmit = (accountDraft) => {
-        onAddAccount?.(accountDraft);
+        onAddAccount?.(accountDraft); // AddAccountForm may pass "Checking"/etc., service normalizes
         closeAdd();
     };
 
     const startEdit = (acc) => {
         setEditingId(acc.id);
-        setDraft({ name: acc.name, type: acc.type, balance: acc.balance });
+        // ensure type uses canonical value if BE returned display text
+        const t = String(acc.type || 'checking').toLowerCase();
+        const canonical = ACCOUNT_TYPES.some(o => o.value === t) ? t : 'other';
+        setDraft({ name: acc.name ?? '', type: canonical, balance: acc.balance ?? 0 });
     };
 
     const cancelEdit = () => {
         setEditingId(null);
-        setDraft({ name: '', type: '', balance: 0 });
+        setDraft({ name: '', type: 'checking', balance: 0 });
     };
 
     const saveEdit = (id) => {
         onUpdateAccount?.(id, {
             name: (draft.name || '').trim() || 'Untitled',
-            type: (draft.type || '').trim() || 'Checking',
-            balance: Number(draft.balance) || 0,
+            type: draft.type,                       // already canonical
+            balance: draft.balance,                 // service will coerce safely (allow 0)
         });
         cancelEdit();
     };
@@ -84,6 +89,10 @@ export default function AccountsPage({
                         <tbody>
                             {accounts.map((acc) => {
                                 const isEditing = editingId === acc.id;
+                                const displayType =
+                                    ACCOUNT_TYPES.find(o => o.value === String(acc.type || '').toLowerCase())?.label
+                                    ?? (acc.type || 'Other');
+
                                 return (
                                     <tr key={acc.id} className="ap-row">
                                         <td className="ap-cell ap-name">
@@ -93,6 +102,7 @@ export default function AccountsPage({
                                                     onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
                                                     className="input-like"
                                                     placeholder="Account name"
+                                                    autoFocus
                                                 />
                                             ) : (
                                                 acc.name
@@ -101,14 +111,17 @@ export default function AccountsPage({
 
                                         <td className="ap-cell">
                                             {isEditing ? (
-                                                <input
+                                                <select
+                                                    className="select-like"
                                                     value={draft.type}
                                                     onChange={(e) => setDraft((d) => ({ ...d, type: e.target.value }))}
-                                                    className="input-like"
-                                                    placeholder="Type (e.g., Checking)"
-                                                />
+                                                >
+                                                    {ACCOUNT_TYPES.map((opt) => (
+                                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                    ))}
+                                                </select>
                                             ) : (
-                                                <span className="tag">{acc.type}</span>
+                                                <span className="tag">{displayType}</span>
                                             )}
                                         </td>
 
@@ -123,7 +136,7 @@ export default function AccountsPage({
                                                     placeholder="0.00"
                                                 />
                                             ) : (
-                                                <span className={`amount ${acc.balance < 0 ? 'neg' : 'pos'}`}>
+                                                <span className={`amount ${Number(acc.balance) < 0 ? 'neg' : 'pos'}`}>
                                                     {currency(acc.balance)}
                                                 </span>
                                             )}
@@ -132,18 +145,14 @@ export default function AccountsPage({
                                         <td className="ap-cell ap-actions">
                                             {isEditing ? (
                                                 <>
-                                                    <button className="tab active" onClick={() => saveEdit(acc.id)}>
-                                                        Save
-                                                    </button>
+                                                    <button className="tab" onClick={() => saveEdit(acc.id)}>Save</button>
                                                     <button className="tab" onClick={cancelEdit} style={{ marginLeft: 8 }}>
                                                         Cancel
                                                     </button>
                                                 </>
                                             ) : (
                                                 <>
-                                                    <button className="tab" onClick={() => startEdit(acc)}>
-                                                        Edit
-                                                    </button>
+                                                    <button className="tab" onClick={() => startEdit(acc)}>Edit</button>
                                                     <button
                                                         className="logout"
                                                         style={{ marginLeft: 8 }}

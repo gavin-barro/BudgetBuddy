@@ -1,5 +1,6 @@
 import React from 'react';
-
+import '../../pages/Dashboard.css'; // shared glass/card styles
+import '../../pages/AccountsPage.css'; // shared accounts list styles
 const currency = (n) => {
   const absVal = Math.abs(n);
   const formatted = absVal.toLocaleString("en-US", {
@@ -23,7 +24,7 @@ const AccountsCard = ({ accounts = [] }) => {
           <li key={a.id} className="list-row">
             <div className="list-main">
               <div className="list-title">{a.name}</div>
-              <div className="list-sub">{a.type}</div>
+              <div className="list-sub">{a.type.toUpperCase()}</div>
             </div>
             <div className={`amount ${a.balance < 0 ? 'neg' : ''}`}>{currency(Number(a.balance) || 0)}</div>
           </li>

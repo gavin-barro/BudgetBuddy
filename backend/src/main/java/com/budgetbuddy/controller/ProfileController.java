@@ -62,7 +62,7 @@ public class ProfileController {
     @PutMapping("/password")
     public ResponseEntity<?> updatePassword(@RequestBody UpdatePasswordDTO updatePasswordDTO, Principal principal) {
         try {
-            profileService.updatePassword(principal.getName(), updatePasswordDTO.getCurrentPassword(), updatePasswordDTO.getNewPassword());
+            profileService.updatePassword(principal, updatePasswordDTO.getCurrentPassword(), updatePasswordDTO.getNewPassword());
             return new ResponseEntity<>("Password updated successfully", HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);

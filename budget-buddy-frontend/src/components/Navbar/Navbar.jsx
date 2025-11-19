@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaSignOutAlt } from 'react-icons/fa';
+
 import './Navbar.css';
 
 export default function Navbar({ user, onNavigate, onLogout, activePage }) {
@@ -20,6 +20,13 @@ export default function Navbar({ user, onNavigate, onLogout, activePage }) {
           >
             Dashboard
           </button>
+          <button
+            className={activePage === 'transactions' ? 'active' : ''}
+            onClick={() => onNavigate('transactions')}
+            type="button"
+            >
+            Transactions
+            </button>
           <button
             className={activePage === 'accounts' ? 'active' : ''}
             onClick={() => onNavigate('accounts')}

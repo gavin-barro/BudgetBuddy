@@ -1,0 +1,127 @@
+/* TransactionsTable.css — scoped table styles only */
+
+/* Theme tokens (inherit from App.css if present) */
+:root {
+  --violet-600: #5b21b6;
+  --violet-700: #4c1d95;
+  --text-900: #111827;
+  --text-600: #4b5563;
+  --glass-border: rgba(0,0,0,0.12);
+  --glass-bg: rgba(255,255,255,0.65);
+  --shadow: 0 8px 30px rgba(0,0,0,0.08);
+}
+
+/* Wrapper keeps the table in a soft “glass” card */
+.ap-table-wrap {
+  width: 100%;
+  overflow: auto;
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  background: var(--glass-bg);
+  box-shadow: var(--shadow);
+}
+
+/* The table itself */
+.ap-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.98rem;
+  color: var(--text-900);
+}
+
+/* Header */
+.ap-table thead th {
+  text-align: left;
+  font-weight: 700;
+  padding: 16px 18px;
+  position: sticky;
+  top: 0;
+  background:
+    linear-gradient(180deg, rgba(139,92,246,0.10) 0%, rgba(139,92,246,0.06) 100%);
+  color: var(--text-900);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.ap-table thead th:first-child {
+  border-top-left-radius: 18px;
+}
+.ap-table thead th:last-child {
+  border-top-right-radius: 18px;
+}
+
+/* Body cells */
+.ap-table tbody td.ap-cell {
+  padding: 14px 18px;
+  border-bottom: 1px dashed rgba(0,0,0,0.08);
+  vertical-align: middle;
+}
+
+/* Row hover */
+.ap-table tbody tr:hover td {
+  background: rgba(139,92,246,0.06);
+}
+
+/* Description truncation */
+.ap-name {
+  display: inline-block;
+  max-width: 32ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Category pill */
+.ap-table .tag {
+  display: inline-block;
+  padding: 6px 10px;
+  border: 1px solid rgba(91,33,182,0.22);
+  border-radius: 999px;
+  font-size: 0.82rem;
+  background: rgba(91,33,182,0.06);
+}
+
+/* Amount color */
+.ap-balance.pos { color: #065f46; font-weight: 700; }
+.ap-balance.neg { color: #b91c1c; font-weight: 700; }
+
+/* Action buttons mirror the “tab” style but scoped here */
+.ap-actions .tab,
+.ap-actions .logout {
+  padding: 6px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+  background: #fff;
+  cursor: pointer;
+  transition: transform 0.06s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.ap-actions .tab:hover,
+.ap-actions .logout:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  border-color: rgba(91,33,182,0.25);
+}
+.ap-actions .logout { margin-left: 8px; }
+
+/* Rounded bottom corners */
+.ap-table tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 18px;
+}
+.ap-table tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 18px;
+}
+
+/* Pagination area if you render one inside the table wrapper (optional) */
+.ap-pagination {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 12px 14px;
+}
+.ap-page-indicator { color: var(--text-600); }
+
+/* Small screens */
+@media (max-width: 720px) {
+  .ap-name { max-width: 22ch; }
+}

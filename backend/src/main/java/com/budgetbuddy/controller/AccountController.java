@@ -17,6 +17,16 @@ public class AccountController {
     @Autowired
     private AccountService accountService;
 
+
+    @GetMapping
+    public ResponseEntity<?> getAccounts(Principal principal) {
+        try {
+            return new ResponseEntity<>(accountService.getAccountsByUsername(principal.getName()), HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>("An error occurred while fetching accounts", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     // POST /api/accounts - Create a new account for the authenticated user
     @PostMapping
     public ResponseEntity<?> createAccount(@RequestBody AccountDTO accountDTO, Principal principal) {
