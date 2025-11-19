@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import AuthenticationPage from './pages/AuthenticationPage';
 import ProfilePage from './pages/ProfilePage';
 import DashboardPage from './pages/DashboardPage';
@@ -59,6 +59,34 @@ function App() {
 
     fetchTransactions();
   }, [currentUser]);
+
+  // ---------- GLOBAL MAPPING: accountsById + transactionsWithAccount ----------
+
+  const accountsById = useMemo(
+    () => Object.fromEntries(accounts.map(a => [String(a.id), a])),
+    [accounts]
+  );
+
+  // Add account reference + accountName onto each transaction
+  const transactionsWithAccount = useMemo(
+    () =>
+      transactions.map((tx) => {
+        const rawAccountId =
+          tx.account_id != null && tx.account_id !== ''
+            ? tx.account_id
+            : tx.accountId;
+
+        const key = rawAccountId != null ? String(rawAccountId) : null;
+        const account = key ? accountsById[key] : undefined;
+
+        return {
+          ...tx,
+          account,                       // full account object (optional)
+          accountName: account?.name || 'Unknown',
+        };
+      }),
+    [transactions, accountsById]
+  );
 
   // --- Account handlers (API-backed) ---
   const handleAddAccount = async (draft) => {
@@ -162,7 +190,7 @@ function App() {
           <DashboardPage
             user={currentUser}
             accounts={accounts}
-            transactions={transactions}
+            transactions={transactionsWithAccount}
           />
         )}
 
@@ -170,7 +198,7 @@ function App() {
           <TransactionsPage
             user={currentUser}
             accounts={accounts}
-            transactions={transactions}
+            transactions={transactionsWithAccount}
             onAddTransaction={handleAddTransaction}
             onUpdateTransaction={handleUpdateTransaction}
             onDeleteTransaction={handleDeleteTransaction}

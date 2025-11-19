@@ -3,7 +3,6 @@ import './Dashboard.css';
 import './Transactions.css';
 import TransactionsTable from '../components/Transactions/TransactionsTable';
 import AddTransactionForm from '../components/Transactions/AddTransactionForm';
-import TransactionService from '../api/TransactionService';
 
 const PAGE_SIZES = [10, 25, 50];
 const SORTS = [
@@ -27,6 +26,38 @@ const CATEGORIES = [
   'Debt',
   'Other',
 ];
+
+// helpers for local filtering/sorting
+const applyFilters = (rows, { accountId, category, type, dateFrom, dateTo, search }) =>
+  rows.filter((r) => {
+    if (accountId && String(r.account_id) !== String(accountId)) return false;
+    if (category && category !== 'All' && r.category !== category) return false;
+    if (type && type !== 'All' && r.type !== type.toLowerCase()) return false;
+    if (dateFrom && r.date < dateFrom) return false;
+    if (dateTo && r.date > dateTo) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      const haystack = `${r.description || ''} ${r.category || ''} ${r.type || ''}`.toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
+    return true;
+  });
+
+const applySort = (rows, sort) => {
+  const [key, dir] = (sort || 'date:desc').split(':');
+  const sign = dir === 'asc' ? 1 : -1;
+
+  return [...rows].sort((a, b) => {
+    const va = a[key];
+    const vb = b[key];
+
+    if (key === 'amount') {
+      return sign * (Number(va) - Number(vb));
+    }
+
+    return sign * String(va).localeCompare(String(vb));
+  });
+};
 
 export default function TransactionsPage({
   user,
@@ -55,26 +86,27 @@ export default function TransactionsPage({
   const [showAdd, setShowAdd] = useState(false);
   const [editingRow, setEditingRow] = useState(null);
 
-  const accountsById = useMemo(
-    () => Object.fromEntries(accounts.map(a => [String(a.id), a])),
-    [accounts]
-  );
-
-  // Load from backend (filter/sort/paginate)
-  async function refresh() {
-    const { rows, total } = await TransactionService.list({
-      filters: { accountId, category, type, dateFrom, dateTo, search },
-      sort,
-      page,
-      pageSize,
-    });
-    setRows(rows);
-    setTotal(total);
-  }
-
+  // Local recompute whenever transactions/filters/sort/page change
   useEffect(() => {
-    refresh();
-  }, [accountId, category, type, dateFrom, dateTo, search, sort, page, pageSize, transactions]);
+    const filtered = applyFilters(transactions, {
+      accountId,
+      category,
+      type,
+      dateFrom,
+      dateTo,
+      search,
+    });
+
+    const sorted = applySort(filtered, sort);
+
+    const newTotal = sorted.length;
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+    const pageRows = sorted.slice(start, end);
+
+    setRows(pageRows);
+    setTotal(newTotal);
+  }, [transactions, accountId, category, type, dateFrom, dateTo, search, sort, page, pageSize]);
 
   const clearFilters = () => {
     setAccountId('');
@@ -99,14 +131,12 @@ export default function TransactionsPage({
       setShowAdd(false);
       setEditingRow(null);
       setPage(1);
-      refresh();
     }
   };
 
   // DELETE HANDLER
   const handleDelete = async (id) => {
     await onDeleteTransaction(id);
-    refresh();
   };
 
   // When user selects an edit
@@ -142,16 +172,26 @@ export default function TransactionsPage({
           <select
             className="select-like"
             value={accountId}
-            onChange={(e) => { setAccountId(e.target.value); setPage(1); }}
+            onChange={(e) => {
+              setAccountId(e.target.value);
+              setPage(1);
+            }}
           >
             <option value="">All accounts</option>
-            {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+              </option>
+            ))}
           </select>
 
           <select
             className="select-like"
             value={type}
-            onChange={(e) => { setType(e.target.value); setPage(1); }}
+            onChange={(e) => {
+              setType(e.target.value);
+              setPage(1);
+            }}
           >
             <option>All</option>
             <option>income</option>
@@ -161,17 +201,27 @@ export default function TransactionsPage({
           <select
             className="select-like"
             value={category}
-            onChange={(e) => { setCategory(e.target.value); setPage(1); }}
+            onChange={(e) => {
+              setCategory(e.target.value);
+              setPage(1);
+            }}
           >
             <option value="All">All categories</option>
-            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            {CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
           </select>
 
           <input
             className="input-like"
             placeholder="Search description"
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
           />
 
           <div className="filter-group-date">
@@ -179,14 +229,20 @@ export default function TransactionsPage({
               className="input-like"
               type="date"
               value={dateFrom}
-              onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setDateFrom(e.target.value);
+                setPage(1);
+              }}
             />
             <span className="filters-sep">to</span>
             <input
               className="input-like"
               type="date"
               value={dateTo}
-              onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setDateTo(e.target.value);
+                setPage(1);
+              }}
             />
           </div>
 
@@ -194,22 +250,42 @@ export default function TransactionsPage({
             <select
               className="select-like"
               value={sort}
-              onChange={(e) => { setSort(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setSort(e.target.value);
+                setPage(1);
+              }}
             >
-              {SORTS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+              {SORTS.map((s) => (
+                <option key={s.value} value={s.value}>
+                  {s.label}
+                </option>
+              ))}
             </select>
 
             <select
               className="select-like"
               value={pageSize}
-              onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setPage(1);
+              }}
             >
-              {PAGE_SIZES.map(n => <option key={n} value={n}>{n}/page</option>)}
+              {PAGE_SIZES.map((n) => (
+                <option key={n} value={n}>
+                  {n}/page
+                </option>
+              ))}
             </select>
           </div>
 
           <div className="filter-reset-row">
-            <button className="tab" onClick={() => { clearFilters(); setPage(1); }}>
+            <button
+              className="tab"
+              onClick={() => {
+                clearFilters();
+                setPage(1);
+              }}
+            >
               Reset Filters
             </button>
           </div>
@@ -218,7 +294,6 @@ export default function TransactionsPage({
         {/* TABLE */}
         <TransactionsTable
           rows={rows}
-          accountsById={accountsById}
           onEdit={onEditRow}
           onDelete={handleDelete}
         />
@@ -232,14 +307,14 @@ export default function TransactionsPage({
             <button
               className="tab"
               disabled={page <= 1}
-              onClick={() => setPage(p => Math.max(1, p - 1))}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
             >
               Prev
             </button>
             <button
               className="tab"
               disabled={end >= total}
-              onClick={() => setPage(p => p + 1)}
+              onClick={() => setPage((p) => p + 1)}
             >
               Next
             </button>
