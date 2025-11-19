@@ -28,7 +28,8 @@ export default function AddTransactionForm({
   const [category, setCategory] = useState('Other');
   const [accountId, setAccountId] = useState('');
 
-  // Prefill when modal opens (add vs edit) :contentReference[oaicite:1]{index=1}
+  // Prefill when modal opens (add vs edit)
+  // IMPORTANT: don't depend on `accounts` so typing doesn't get reset
   useEffect(() => {
     if (!open) return;
 
@@ -36,16 +37,27 @@ export default function AddTransactionForm({
 
     if (initialValues) {
       // EDIT mode
+      const rawAmount = initialValues.amount;
+      const absoluteAmount =
+        rawAmount !== undefined && rawAmount !== null
+          ? Math.abs(Number(rawAmount))
+          : '';
+
       setDate(initialValues.date || today);
       setDescription(initialValues.description || '');
       setAmount(
-        initialValues.amount !== undefined && initialValues.amount !== null
-          ? String(initialValues.amount)
-          : ''
+        absoluteAmount === '' || Number.isNaN(absoluteAmount)
+          ? ''
+          : String(absoluteAmount)
       );
       setType(initialValues.type || 'expense');
       setCategory(initialValues.category || 'Other');
-      setAccountId(initialValues.account_id || accounts[0]?.id || '');
+      setAccountId(
+        initialValues.account_id ??
+          initialValues.accountId ??
+          accounts[0]?.id ??
+          ''
+      );
     } else {
       // ADD mode
       setDate(today);
@@ -55,7 +67,7 @@ export default function AddTransactionForm({
       setCategory('Other');
       setAccountId(accounts[0]?.id || '');
     }
-  }, [open, initialValues, accounts]);
+  }, [open, initialValues]); // <-- removed `accounts` here
 
   const numericAmount = useMemo(() => {
     const n = Number(amount);
@@ -79,10 +91,10 @@ export default function AddTransactionForm({
     onSubmit?.({
       date,
       description: description.trim(),
-      amount: numericAmount,
+      amount: numericAmount, // TransactionService will make expenses negative
       type,
       category,
-      account_id: accountId, // TransactionService maps this to backend accountId :contentReference[oaicite:2]{index=2}
+      account_id: accountId, // TransactionService maps this to backend accountId
     });
   };
 

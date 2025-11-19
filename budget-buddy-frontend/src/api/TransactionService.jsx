@@ -2,73 +2,89 @@
 
 import apiClient from './apiClient';
 
-// ----- CLIENT-SIDE FILTERS -----
-const applyFilters = (rows, { accountId, category, type, dateFrom, dateTo, search }) => {
-  return rows.filter((r) => {
-    if (accountId && String(r.account_id) !== String(accountId)) return false;
-    if (category && category !== 'All' && r.category !== category) return false;
-    if (type && type !== 'All' && r.type !== type.toLowerCase()) return false;
-    if (dateFrom && r.date < dateFrom) return false;
-    if (dateTo && r.date > dateTo) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      const hay = `${r.description} ${r.category} ${r.type}`.toLowerCase();
-      if (!hay.includes(q)) return false;
-    }
-    return true;
-  });
-};
+// -------------------- Helpers: Normalization --------------------
 
-// ----- CLIENT-SIDE SORT -----
-const applySort = (rows, sortKey) => {
-  const [key, dir] = (sortKey || 'date:desc').split(':');
-  const sign = dir === 'asc' ? 1 : -1;
-
-  const cmp = (a, b) => {
-    const va = a[key];
-    const vb = b[key];
-
-    if (key === 'amount') {
-      return sign * (Number(va) - Number(vb));
-    }
-
-    return sign * String(va).localeCompare(String(vb));
-  };
-
-  return [...rows].sort(cmp);
-};
-
-// ----- NORMALIZATION: backend -> frontend row -----
+// Backend -> Frontend
+// - Handles nested `account` and `user` objects.
+// - Converts enum type ("INCOME"/"EXPENSE") to lowercase ("income"/"expense").
+// - Ensures expenses have NEGATIVE amounts in the UI.
+// - Normalizes date from "2025-11-01T00:00:00" → "2025-11-01".
 function normalizeFromApi(txn) {
   if (!txn) return null;
 
-  const id = txn.id;
-  const accountId = txn.accountId ?? txn.account_id;
-  const amount = Number(txn.amount ?? 0);
-  const type = String(txn.type || 'expense').toLowerCase(); // "income" / "expense"
+  const account = txn.account || {};
+  const user = txn.user || {};
+
+  const rawAmount = Number(txn.amount ?? 0);
+
+  // Backend enum is likely "INCOME" / "EXPENSE"
+  const rawType = String(txn.type || 'EXPENSE').toUpperCase();
+  const type = rawType === 'INCOME' ? 'income' : 'expense';
+
+  // Make amount negative for expenses, positive for income
+  const amount =
+    rawType === 'EXPENSE' ? -Math.abs(rawAmount) : Math.abs(rawAmount);
+
   const category = txn.category || 'Other';
   const description = txn.description || '';
-  const rawDate = txn.date || txn.transactionDate || new Date().toISOString();
-  const date = rawDate.slice(0, 10); // YYYY-MM-DD
+
+  // Normalize date to "YYYY-MM-DD"
+  const rawDate =
+    txn.date ||
+    txn.transactionDate ||
+    txn.transaction_date ||
+    new Date().toISOString();
+  const date = String(rawDate).slice(0, 10); // YYYY-MM-DD
+
+  const createdAt = txn.createdAt || null;
+
+  // Try to resolve account id from multiple possible shapes
+  const accountId =
+    txn.accountId ??
+    txn.account_id ??
+    account.id ??
+    '';
 
   return {
-    id,
-    account_id: String(accountId ?? ''),
+    // Core fields your UI likely uses
+    id: txn.id,
+    account_id: String(accountId), // keep as string for selects
     amount,
-    type,
+    type, // "income" | "expense"
     category,
     date,
     description,
+
+    // Extra account info (nice for display)
+    accountName: account.name ?? null,
+    accountType: account.type ?? null,
+    accountBalance: account.balance ?? null,
+    accountCreatedAt: account.createdAt ?? null,
+
+    // Extra user info (if needed)
+    userId: user.id ?? null,
+    userEmail: user.email ?? null,
+    userFirstName: user.firstName ?? null,
+    userLastName: user.lastName ?? null,
+
+    createdAt,
+    _raw: txn, // raw backend object, in case you ever need it
   };
 }
 
-// ----- NORMALIZATION: frontend draft/patch -> backend payload -----
+// Frontend -> Backend
+// - Always sends a POSITIVE amount.
+// - Sends enum type as "INCOME"/"EXPENSE".
+// - Sends `accountId` (not `account_id`).
+// - Uses date as "YYYY-MM-DD" (backend can convert to LocalDateTime).
 function toApiPayload(draftOrPatch) {
   if (!draftOrPatch) return {};
+
   const {
     id,
     account_id,
     accountId,
+    account, // full account object if provided
     amount,
     type,
     category,
@@ -77,25 +93,37 @@ function toApiPayload(draftOrPatch) {
     ...rest
   } = draftOrPatch;
 
+  // Resolve which account id to send
+  const resolvedAccountId =
+    accountId ??
+    account_id ??
+    (account && account.id) ??
+    undefined;
+
+  // Always send a POSITIVE amount; backend + "type" decide direction.
+  const positiveAmount = Math.abs(Number(amount ?? 0));
+
+
+  // Date: UI usually passes "YYYY-MM-DD"; backend can turn it into LocalDateTime.
+  const normalizedDate = date || undefined;
+
   return {
     id,
-    accountId: accountId ?? account_id, // backend expects accountId
-    amount,
-    // send lowercase or adjust to match your enum, ex: String(type).toUpperCase()
-    type: type ? String(type).toLowerCase() : undefined,
+    accountId: resolvedAccountId,
+    amount: positiveAmount,
+    type: type,
     category,
-    date,
+    date: normalizedDate,
     description,
     ...rest,
   };
 }
 
-// ----- HANDLE DIFFERENT LIST RESPONSE SHAPES -----
-// Supports:
-//   - array of txns
-//   - { content: [...], totalElements: N }  (Spring Page)
-//   - { transactions: [...] }              (alt API shape)
-const normalizeListPayload = (data) => {
+// Handles different list payload shapes:
+//  - [ ... ] plain array
+//  - { content: [...], totalElements, number, size, ... }  (Spring Page)
+//  - { transactions: [...] }
+function normalizeListPayload(data) {
   if (!data) {
     return { items: [], total: 0 };
   }
@@ -109,75 +137,153 @@ const normalizeListPayload = (data) => {
   if (Array.isArray(data.content)) {
     return {
       items: data.content,
-      total: typeof data.totalElements === 'number'
-        ? data.totalElements
-        : data.content.length,
+      total:
+        typeof data.totalElements === 'number'
+          ? data.totalElements
+          : data.content.length,
+      pageNumber:
+        typeof data.number === 'number' ? data.number : 0,
+      pageSize:
+        typeof data.size === 'number'
+          ? data.size
+          : data.content.length,
     };
   }
 
-  // { transactions: [...] }
+  // Alternative shape: { transactions: [...] }
   if (Array.isArray(data.transactions)) {
-    return { items: data.transactions, total: data.transactions.length };
+    return {
+      items: data.transactions,
+      total: data.transactions.length,
+    };
   }
 
   // Fallback
   return { items: [], total: 0 };
-};
+}
+
+// -------------------- Main Service --------------------
 
 const TransactionService = {
-  // No-op: data comes from backend now
+  // No-op here; keeping for compatibility if you were seeding local data before
   seedIfEmpty() {},
 
-  // Fetch single transaction by id
+  // GET /api/transactions/{id}
   async get(id) {
-    const { data } = await apiClient.get(`/api/transactions/${encodeURIComponent(id)}`);
+    const { data } = await apiClient.get(
+      `/api/transactions/${encodeURIComponent(id)}`
+    );
     const txn = data?.transaction ?? data;
     return normalizeFromApi(txn);
   },
 
-  // Fetch all transactions for the user, then filter/sort/paginate on client
+  /**
+   * GET /api/transactions
+   *
+   * Sends:
+   *   page (0-based), size, sort=field,dir
+   *   accountId, category, type, dateFrom, dateTo, search (if provided)
+   *
+   * Expects backend to return a Spring Page<TransactionEntity> like:
+   * {
+   *   content: [ { id, account: {...}, user: {...}, ... } ],
+   *   totalElements, totalPages, number, size, ...
+   * }
+   */
   async list({
     filters = {},
-    sort = 'date:desc',
-    page = 1,
+    sort = 'date:desc', // "field:direction"
+    page = 1,           // 1-based in the UI
     pageSize = 10,
   } = {}) {
-    // For now we just get the first backend page (or all if backend returns all),
-    // and let the client handle filters + pagination.
-    const { data } = await apiClient.get('/api/transactions');
+    const params = {};
 
-    const { items } = normalizeListPayload(data);
-    const all = Array.isArray(items)
+    // Pagination: Spring Pageable is 0-based
+    params.page = Math.max(page - 1, 0);
+    params.size = pageSize;
+
+    // Sort: "date:desc" -> "date,desc"
+    if (sort) {
+      const [field, dir] = String(sort).split(':');
+      const direction =
+        dir && dir.toLowerCase() === 'asc' ? 'asc' : 'desc';
+      params.sort = `${field},${direction}`;
+    }
+
+    // Filters (these should align with your TransactionController @RequestParam)
+    const {
+      accountId,
+      category,
+      type,
+      dateFrom,
+      dateTo,
+      search,
+    } = filters || {};
+
+    if (accountId) params.accountId = accountId;
+    if (category && category !== 'All') params.category = category;
+    if (type && type !== 'All') {
+      params.type = String(type).toUpperCase(); // backend enum
+    }
+    if (dateFrom) params.dateFrom = dateFrom; // "YYYY-MM-DD"
+    if (dateTo) params.dateTo = dateTo;       // "YYYY-MM-DD"
+    if (search) params.search = search;
+
+    const { data } = await apiClient.get('/api/transactions', {
+      params,
+    });
+
+    const {
+      items,
+      total,
+      pageNumber,
+      pageSize: backendSize,
+    } = normalizeListPayload(data);
+
+    const rows = Array.isArray(items)
       ? items.map(normalizeFromApi).filter(Boolean)
       : [];
 
-    const filtered = applyFilters(all, filters);
-    const sorted = applySort(filtered, sort);
+    const effectivePage =
+      typeof pageNumber === 'number' ? pageNumber + 1 : page;
+    const effectivePageSize =
+      typeof backendSize === 'number' ? backendSize : pageSize;
 
-    const total = sorted.length;
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    const pageRows = sorted.slice(start, end);
-
-    return { rows: pageRows, total, page, pageSize };
+    return {
+      rows,          // normalized, with negative expenses
+      total,         // total number of records (for pagination)
+      page: effectivePage,      // still 1-based for UI
+      pageSize: effectivePageSize,
+    };
   },
 
+  // POST /api/transactions
   async create(txnDraft) {
     const payload = toApiPayload(txnDraft);
-    const { data } = await apiClient.post('/api/transactions', payload);
+    const { data } = await apiClient.post(
+      '/api/transactions',
+      payload
+    );
     const txn = data?.transaction ?? data;
     return normalizeFromApi(txn);
   },
 
+  // PUT /api/transactions/{id}
   async update(id, patch) {
     const payload = toApiPayload({ ...patch, id });
-    const { data } = await apiClient.put(`/api/transactions/${encodeURIComponent(id)}`, payload);
+    const { data } = await apiClient.put(
+      `/api/transactions/${encodeURIComponent(id)}`,
+      payload
+    );
     const txn = data?.transaction ?? data;
     return normalizeFromApi(txn);
   },
 
+  // DELETE /api/transactions/{id}
   async remove(id) {
-    await apiClient.delete(`/api/transactions/${encodeURIComponent(id)}`);
+    await apiClient.delete(
+      `/api/transactions/${encodeURIComponent(id)}`
+    );
     return { ok: true };
   },
 };

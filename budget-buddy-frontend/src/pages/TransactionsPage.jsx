@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import './Dashboard.css';
 import './Transactions.css';
 import TransactionsTable from '../components/Transactions/TransactionsTable';
 import AddTransactionForm from '../components/Transactions/AddTransactionForm';
 
 const PAGE_SIZES = [10, 25, 50];
+
 const SORTS = [
   { value: 'date:desc', label: 'Date (newest first)' },
   { value: 'date:asc', label: 'Date (oldest first)' },
@@ -14,99 +15,100 @@ const SORTS = [
   { value: 'description:desc', label: 'Description (Z-A)' },
 ];
 
+// Static category list – adjust as you like
 const CATEGORIES = [
-  'Income',
-  'Food & Dining',
-  'Transportation',
   'Housing',
   'Utilities',
-  'Health & Fitness',
-  'Shopping',
+  'Food',
+  'Transportation',
   'Entertainment',
+  'Health',
   'Debt',
+  'Savings',
   'Other',
 ];
 
-// helpers for local filtering/sorting
-const applyFilters = (rows, { accountId, category, type, dateFrom, dateTo, search }) =>
-  rows.filter((r) => {
-    if (accountId && String(r.account_id) !== String(accountId)) return false;
-    if (category && category !== 'All' && r.category !== category) return false;
-    if (type && type !== 'All' && r.type !== type.toLowerCase()) return false;
-    if (dateFrom && r.date < dateFrom) return false;
-    if (dateTo && r.date > dateTo) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      const haystack = `${r.description || ''} ${r.category || ''} ${r.type || ''}`.toLowerCase();
-      if (!haystack.includes(q)) return false;
-    }
-    return true;
-  });
-
-const applySort = (rows, sort) => {
-  const [key, dir] = (sort || 'date:desc').split(':');
-  const sign = dir === 'asc' ? 1 : -1;
+function sortRows(rows, sort) {
+  if (!sort) return rows;
+  const [field, dir] = sort.split(':'); // e.g. "date:desc"
+  const factor = dir === 'desc' ? -1 : 1;
 
   return [...rows].sort((a, b) => {
-    const va = a[key];
-    const vb = b[key];
+    let av = a[field];
+    let bv = b[field];
 
-    if (key === 'amount') {
-      return sign * (Number(va) - Number(vb));
+    if (field === 'amount') {
+      av = Number(av) || 0;
+      bv = Number(bv) || 0;
+    }
+    if (field === 'description') {
+      av = (av || '').toLowerCase();
+      bv = (bv || '').toLowerCase();
     }
 
-    return sign * String(va).localeCompare(String(vb));
+    if (av < bv) return -1 * factor;
+    if (av > bv) return 1 * factor;
+    return 0;
   });
-};
+}
 
 export default function TransactionsPage({
   user,
-  accounts = [],
-  transactions = [],
+  accounts,
+  transactions,
   onAddTransaction,
   onUpdateTransaction,
   onDeleteTransaction,
 }) {
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [sort, setSort] = useState('date:desc');
+  const [showAdd, setShowAdd] = useState(false);
+  const [editingRow, setEditingRow] = useState(null);
 
   // Filters
   const [accountId, setAccountId] = useState('');
-  const [category, setCategory] = useState('All');
-  const [type, setType] = useState('All');
+  const [category, setCategory] = useState('All'); // "All" | one of CATEGORIES
+  const [type, setType] = useState('All'); // "All" | "income" | "expense"
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [search, setSearch] = useState('');
 
-  // Paginated/filtered rows
-  const [rows, setRows] = useState([]);
-  const [total, setTotal] = useState(0);
+  // Paging + sorting
+  const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
+  const [page, setPage] = useState(1);
+  const [sort, setSort] = useState('date:desc');
 
-  const [showAdd, setShowAdd] = useState(false);
-  const [editingRow, setEditingRow] = useState(null);
+  // Filter + sort
+  const filtered = useMemo(() => {
+    let rows = transactions || [];
 
-  // Local recompute whenever transactions/filters/sort/page change
-  useEffect(() => {
-    const filtered = applyFilters(transactions, {
-      accountId,
-      category,
-      type,
-      dateFrom,
-      dateTo,
-      search,
+    rows = rows.filter((r) => {
+      const accountIdValue = String(r.account_id ?? r.accountId ?? '');
+
+      if (accountId && accountIdValue !== String(accountId)) return false;
+      if (category && category !== 'All' && r.category !== category) return false;
+      if (type && type !== 'All' && r.type !== type.toLowerCase()) return false;
+      if (dateFrom && r.date < dateFrom) return false;
+      if (dateTo && r.date > dateTo) return false;
+
+      if (search) {
+        const q = search.toLowerCase();
+        const haystack = `${r.description ?? ''}`.toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+
+      return true;
     });
 
-    const sorted = applySort(filtered, sort);
+    rows = sortRows(rows, sort);
+    return rows;
+  }, [transactions, accountId, category, type, dateFrom, dateTo, search, sort]);
 
-    const newTotal = sorted.length;
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    const pageRows = sorted.slice(start, end);
+  const total = filtered.length;
+  const startIndex = (page - 1) * pageSize;
+  const endIndexExclusive = startIndex + pageSize;
+  const rows = filtered.slice(startIndex, endIndexExclusive);
 
-    setRows(pageRows);
-    setTotal(newTotal);
-  }, [transactions, accountId, category, type, dateFrom, dateTo, search, sort, page, pageSize]);
+  const start = total === 0 ? 0 : startIndex + 1;
+  const end = total === 0 ? 0 : Math.min(total, endIndexExclusive);
 
   const clearFilters = () => {
     setAccountId('');
@@ -117,36 +119,24 @@ export default function TransactionsPage({
     setSearch('');
   };
 
-  // ---------------------------
-  // SAVE HANDLER: CREATE or UPDATE
-  // ---------------------------
-  const handleSave = async (draft) => {
-    try {
-      if (editingRow && editingRow.id) {
-        await onUpdateTransaction(editingRow.id, draft);
-      } else {
-        await onAddTransaction(draft);
-      }
-    } finally {
-      setShowAdd(false);
-      setEditingRow(null);
-      setPage(1);
-    }
-  };
-
-  // DELETE HANDLER
-  const handleDelete = async (id) => {
-    await onDeleteTransaction(id);
-  };
-
-  // When user selects an edit
   const onEditRow = (row) => {
     setEditingRow(row);
     setShowAdd(true);
   };
 
-  const start = total ? (page - 1) * pageSize + 1 : 0;
-  const end = Math.min(page * pageSize, total);
+  const handleSave = async (values) => {
+    if (editingRow) {
+      await onUpdateTransaction?.(editingRow.id, values);
+    } else {
+      await onAddTransaction?.(values);
+    }
+    setShowAdd(false);
+    setEditingRow(null);
+  };
+
+  const handleDelete = async (id) => {
+    await onDeleteTransaction?.(id);
+  };
 
   return (
     <div className="db-container">
@@ -169,6 +159,7 @@ export default function TransactionsPage({
 
         {/* FILTERS */}
         <div className="filters">
+          {/* Account */}
           <select
             className="select-like"
             value={accountId}
@@ -185,6 +176,7 @@ export default function TransactionsPage({
             ))}
           </select>
 
+          {/* Type */}
           <select
             className="select-like"
             value={type}
@@ -193,11 +185,12 @@ export default function TransactionsPage({
               setPage(1);
             }}
           >
-            <option>All</option>
-            <option>income</option>
-            <option>expense</option>
+            <option value="All">All</option>
+            <option value="income">income</option>
+            <option value="expense">expense</option>
           </select>
 
+          {/* Category */}
           <select
             className="select-like"
             value={category}
@@ -214,6 +207,7 @@ export default function TransactionsPage({
             ))}
           </select>
 
+          {/* Search */}
           <input
             className="input-like"
             placeholder="Search description"
@@ -224,6 +218,7 @@ export default function TransactionsPage({
             }}
           />
 
+          {/* Date range */}
           <div className="filter-group-date">
             <input
               className="input-like"
@@ -246,6 +241,7 @@ export default function TransactionsPage({
             />
           </div>
 
+          {/* Sort + page size */}
           <div className="filter-group-controls">
             <select
               className="select-like"
@@ -278,6 +274,7 @@ export default function TransactionsPage({
             </select>
           </div>
 
+          {/* Reset */}
           <div className="filter-reset-row">
             <button
               className="tab"

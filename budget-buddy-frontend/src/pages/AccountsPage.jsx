@@ -145,7 +145,7 @@ export default function AccountsPage({
                                         <td className="ap-cell ap-actions">
                                             {isEditing ? (
                                                 <>
-                                                    <button className="tab active" onClick={() => saveEdit(acc.id)}>Save</button>
+                                                    <button className="tab" onClick={() => saveEdit(acc.id)}>Save</button>
                                                     <button className="tab" onClick={cancelEdit} style={{ marginLeft: 8 }}>
                                                         Cancel
                                                     </button>
