@@ -31,9 +31,10 @@ BudgetBuddy/
 │   │   │   │       │   └── TransactionRepository.java
 │   │   │   │       ├── service/
 │   │   │   │       │   ├── AuthService.java    # Registration/login logic
-│   │   │   │       │   ├── ProfileService.java  # NEW: Profile update logic (get/update name/email/password)
+│   │   │   │       │   ├── ProfileService.java  # Profile update logic (get/update name/email/password)
 │   │   │   │       │   ├── AccountService.java
 │   │   │   │       │   ├── TransactionService.java
+│   │   │   │       │   └── TransactionSpecification.java
 │   │   │   │       │   └── DashboardService.java
 │   │   │   │       └── util/
 │   │   │   │           ├── JwtUtil.java
