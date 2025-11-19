@@ -15,7 +15,6 @@ const SORTS = [
   { value: 'description:desc', label: 'Description (Z-A)' },
 ];
 
-// Keep categories consistent with the AddTransactionForm defaults
 const CATEGORIES = [
   'Income',
   'Food & Dining',
@@ -29,7 +28,14 @@ const CATEGORIES = [
   'Other',
 ];
 
-export default function TransactionsPage({ user, accounts = [] }) {
+export default function TransactionsPage({
+  user,
+  accounts = [],
+  transactions = [],
+  onAddTransaction,
+  onUpdateTransaction,
+  onDeleteTransaction,
+}) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [sort, setSort] = useState('date:desc');
@@ -42,11 +48,11 @@ export default function TransactionsPage({ user, accounts = [] }) {
   const [dateTo, setDateTo] = useState('');
   const [search, setSearch] = useState('');
 
+  // Paginated/filtered rows
   const [rows, setRows] = useState([]);
   const [total, setTotal] = useState(0);
-  const [showAdd, setShowAdd] = useState(false);
 
-  // NEW: track the row we’re editing (or null when adding)
+  const [showAdd, setShowAdd] = useState(false);
   const [editingRow, setEditingRow] = useState(null);
 
   const accountsById = useMemo(
@@ -54,10 +60,7 @@ export default function TransactionsPage({ user, accounts = [] }) {
     [accounts]
   );
 
-  useEffect(() => {
-    TransactionService.seedIfEmpty();
-  }, []);
-
+  // Load from backend (filter/sort/paginate)
   async function refresh() {
     const { rows, total } = await TransactionService.list({
       filters: { accountId, category, type, dateFrom, dateTo, search },
@@ -71,7 +74,7 @@ export default function TransactionsPage({ user, accounts = [] }) {
 
   useEffect(() => {
     refresh();
-  }, [accountId, category, type, dateFrom, dateTo, search, sort, page, pageSize]);
+  }, [accountId, category, type, dateFrom, dateTo, search, sort, page, pageSize, transactions]);
 
   const clearFilters = () => {
     setAccountId('');
@@ -82,28 +85,31 @@ export default function TransactionsPage({ user, accounts = [] }) {
     setSearch('');
   };
 
-  // Single save handler: decides between create vs update
-  const onSave = async (draft) => {
-    if (editingRow && editingRow.id != null) {
-      // UPDATE via TransactionService
-      await TransactionService.update(editingRow.id, draft);
-    } else {
-      // CREATE
-      await TransactionService.create(draft);
+  // ---------------------------
+  // SAVE HANDLER: CREATE or UPDATE
+  // ---------------------------
+  const handleSave = async (draft) => {
+    try {
+      if (editingRow && editingRow.id) {
+        await onUpdateTransaction(editingRow.id, draft);
+      } else {
+        await onAddTransaction(draft);
+      }
+    } finally {
+      setShowAdd(false);
+      setEditingRow(null);
+      setPage(1);
+      refresh();
     }
+  };
 
-    setShowAdd(false);
-    setEditingRow(null);
-    setPage(1);
+  // DELETE HANDLER
+  const handleDelete = async (id) => {
+    await onDeleteTransaction(id);
     refresh();
   };
 
-  const onDelete = async (id) => {
-    await TransactionService.remove(id);
-    refresh();
-  };
-
-  // Called when user clicks "Edit" in TransactionsTable
+  // When user selects an edit
   const onEditRow = (row) => {
     setEditingRow(row);
     setShowAdd(true);
@@ -122,7 +128,6 @@ export default function TransactionsPage({ user, accounts = [] }) {
               className="tab active"
               type="button"
               onClick={() => {
-                // ensure we’re in “add” mode
                 setEditingRow(null);
                 setShowAdd(true);
               }}
@@ -132,9 +137,8 @@ export default function TransactionsPage({ user, accounts = [] }) {
           </div>
         </header>
 
-        {/* Filters Row */}
+        {/* FILTERS */}
         <div className="filters">
-          {/* Item 1: Account */}
           <select
             className="select-like"
             value={accountId}
@@ -144,7 +148,6 @@ export default function TransactionsPage({ user, accounts = [] }) {
             {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
           </select>
 
-          {/* Item 2: Type */}
           <select
             className="select-like"
             value={type}
@@ -155,7 +158,6 @@ export default function TransactionsPage({ user, accounts = [] }) {
             <option>expense</option>
           </select>
 
-          {/* Item 3: Category */}
           <select
             className="select-like"
             value={category}
@@ -165,7 +167,6 @@ export default function TransactionsPage({ user, accounts = [] }) {
             {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
 
-          {/* Item 4: Search */}
           <input
             className="input-like"
             placeholder="Search description"
@@ -173,7 +174,6 @@ export default function TransactionsPage({ user, accounts = [] }) {
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           />
 
-          {/* Item 5: Date Range Group */}
           <div className="filter-group-date">
             <input
               className="input-like"
@@ -190,7 +190,6 @@ export default function TransactionsPage({ user, accounts = [] }) {
             />
           </div>
 
-          {/* Item 6: Controls Group */}
           <div className="filter-group-controls">
             <select
               className="select-like"
@@ -199,6 +198,7 @@ export default function TransactionsPage({ user, accounts = [] }) {
             >
               {SORTS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
+
             <select
               className="select-like"
               value={pageSize}
@@ -208,27 +208,22 @@ export default function TransactionsPage({ user, accounts = [] }) {
             </select>
           </div>
 
-          {/* Item 7: Reset row */}
           <div className="filter-reset-row">
-            <button
-              className="tab"
-              type="button"
-              onClick={() => { clearFilters(); setPage(1); }}
-            >
+            <button className="tab" onClick={() => { clearFilters(); setPage(1); }}>
               Reset Filters
             </button>
           </div>
         </div>
 
-        {/* Table */}
+        {/* TABLE */}
         <TransactionsTable
           rows={rows}
           accountsById={accountsById}
           onEdit={onEditRow}
-          onDelete={onDelete}
+          onDelete={handleDelete}
         />
 
-        {/* Pagination */}
+        {/* PAGINATION */}
         <div className="pagination">
           <div className="pagination-left">
             {start}–{end} of {total}
@@ -252,16 +247,15 @@ export default function TransactionsPage({ user, accounts = [] }) {
         </div>
       </section>
 
-      {/* Modal */}
+      {/* ADD/EDIT TRANSACTION MODAL */}
       <AddTransactionForm
         open={showAdd}
         onCancel={() => {
           setShowAdd(false);
           setEditingRow(null);
         }}
-        onSubmit={onSave}
+        onSubmit={handleSave}
         accounts={accounts}
-        // when editingRow is non-null, form can use it to prefill fields
         initialValues={editingRow}
       />
     </div>
