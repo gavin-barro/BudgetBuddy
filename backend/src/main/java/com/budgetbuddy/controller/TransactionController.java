@@ -4,6 +4,7 @@ import com.budgetbuddy.dto.TransactionDTO;
 import com.budgetbuddy.entity.TransactionEntity;
 import com.budgetbuddy.service.TransactionService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,7 +18,22 @@ public class TransactionController {
     @Autowired
     private TransactionService transactionService;
 
-    // POST /api/transactions - Create a new transaction for the authenticated user's account
+    // GET /api/transactions - with filtering, sorting, pagination
+    @GetMapping
+    public ResponseEntity<Page<TransactionEntity>> getTransactions(
+            Principal principal,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false, defaultValue = "date_desc") String sortBy,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "20") int limit) {
+
+        Page<TransactionEntity> transactions = transactionService.getTransactions(
+                principal.getName(), category, sortBy, page, limit);
+
+        return new ResponseEntity<>(transactions, HttpStatus.OK);
+    }
+
+    // POST /api/transactions
     @PostMapping
     public ResponseEntity<?> createTransaction(@RequestBody TransactionDTO transactionDTO, Principal principal) {
         try {
@@ -30,7 +46,7 @@ public class TransactionController {
         }
     }
 
-    // PUT /api/transactions/{id} - Update an existing transaction
+    // PUT /api/transactions/{id}
     @PutMapping("/{id}")
     public ResponseEntity<?> updateTransaction(@PathVariable Long id, @RequestBody TransactionDTO transactionDTO, Principal principal) {
         try {
@@ -43,7 +59,7 @@ public class TransactionController {
         }
     }
 
-    // DELETE /api/transactions/{id} - Delete an existing transaction
+    // DELETE /api/transactions/{id}
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteTransaction(@PathVariable Long id, Principal principal) {
         try {
