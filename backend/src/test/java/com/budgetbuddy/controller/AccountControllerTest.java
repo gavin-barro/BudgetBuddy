@@ -1,7 +1,6 @@
 package com.budgetbuddy.controller;
 
 import com.budgetbuddy.dto.AccountDTO;
-import com.budgetbuddy.entity.AccountEntity;
 import com.budgetbuddy.entity.UserEntity;
 import com.budgetbuddy.repository.AccountRepository;
 import com.budgetbuddy.repository.UserRepository;
@@ -14,6 +13,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @Transactional
 public class AccountControllerTest {
 
@@ -37,7 +38,8 @@ public class AccountControllerTest {
 
     @BeforeEach
     public void setup() {
-        // This now runs inside a transaction - executeUpdate() is fixed i think idk
+
+        // JPQL delete requires a transaction, should be safe because @Transactional is on the class
         entityManager.createQuery("DELETE FROM TransactionEntity").executeUpdate();
 
         accountRepository.deleteAll();
@@ -48,9 +50,8 @@ public class AccountControllerTest {
         testUser.setLastName("Doe");
         testUser.setEmail("john.doe@example.com");
         testUser.setPasswordHash("$2a$10$dummyhash1234567890123456");
-        testUser = userRepository.saveAndFlush(testUser); // flush to be safe
+        userRepository.saveAndFlush(testUser);
     }
-
     @Test
     @WithMockUser(username = "john.doe@example.com")
     public void testCreateAccountSuccess() throws Exception {
