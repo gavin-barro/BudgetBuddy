@@ -24,9 +24,9 @@ export default function Navbar({ user, onNavigate, onLogout, activePage }) {
             className={activePage === 'transactions' ? 'active' : ''}
             onClick={() => onNavigate('transactions')}
             type="button"
-            >
+          >
             Transactions
-            </button>
+          </button>
           <button
             className={activePage === 'accounts' ? 'active' : ''}
             onClick={() => onNavigate('accounts')}
@@ -45,18 +45,13 @@ export default function Navbar({ user, onNavigate, onLogout, activePage }) {
 
         {/* User info + logout */}
         <div className="navbar-user">
-          {user && (
-            <span className="navbar-username">
-              Welcome, {user.firstName || user.name || 'User'}
-            </span>
-          )}
           <button
-            className="logout-nav-button"
+            className="logout-nav-button logout-with-text"
             onClick={onLogout}
             type="button"
-            aria-label="Logout"
           >
-            <i class="fas fa-sign-out-alt"></i>
+            <i className="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
           </button>
         </div>
       </div>

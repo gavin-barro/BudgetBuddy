@@ -2,7 +2,7 @@ import React from 'react';
 import AccountsCard from '../components/Dashboard/AccountsCard';
 import TransactionsCard from '../components/Dashboard/TransactionsCard';
 import CategoryPieCard from '../components/Dashboard/CategoryPieCard';
-import AccountBalancesLineCard from '../components/Dashboard/AccountBalancesLineCard';
+import AccountComparisonsCard from '../components/Dashboard/AccountComparisonsCard';
 import './Dashboard.css';
 
 /**
@@ -40,7 +40,7 @@ const DashboardPage = ({ user, accounts = [], transactions = [] }) => {
         <div className="db-col-right">
           {/* Category & balances also use the real arrays; if empty, they can render empty states */}
           <CategoryPieCard transactions={transactions} />
-          <AccountBalancesLineCard accounts={accounts} />
+          <AccountComparisonsCard accounts={accounts} transactions={transactions} />
         </div>
       </div>
     </div>

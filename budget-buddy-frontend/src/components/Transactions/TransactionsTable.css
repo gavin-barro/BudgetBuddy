@@ -24,11 +24,11 @@
 /* The table itself */
 .ap-table {
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
+  border-collapse: collapse;
   font-size: 0.98rem;
   color: var(--text-900);
 }
+
 
 /* Header */
 .ap-table thead th {
@@ -53,23 +53,26 @@
 /* Body cells */
 .ap-table tbody td.ap-cell {
   padding: 14px 18px;
-  border-bottom: 1px dashed rgba(0,0,0,0.08);
   vertical-align: middle;
+  border-bottom: none;
 }
 
+
 /* Row hover */
-.ap-table tbody tr:hover td {
-  background: rgba(139,92,246,0.06);
+.ap-table tbody tr:hover {
+  background: rgba(139,92,246,0.06); /* smooth row highlight */
 }
+
 
 /* Description truncation */
 .ap-name {
   display: inline-block;
-  max-width: 32ch;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  max-width: 28ch;     /* adjust how "wide" before wrapping */
+  white-space: normal; /* allow line breaks */
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
+
 
 /* Category pill */
 .ap-table .tag {

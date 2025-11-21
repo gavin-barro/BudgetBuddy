@@ -23,17 +23,14 @@
   gap: 24px;
 }
 
-.db-col-left {
+/* Let cards size themselves based on content */
+.db-col-left,
+.db-col-right {
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-auto-rows: auto;
   gap: 24px;
 }
 
-.db-col-right {
-  display: grid;
-  grid-template-rows: 1fr 1fr;
-  gap: 24px;
-}
 
 .card {
   background: var(--glass-bg);
