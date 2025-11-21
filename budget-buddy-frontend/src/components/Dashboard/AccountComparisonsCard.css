@@ -1,0 +1,65 @@
+/* Header layout: title + dropdown */
+.abl-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  
+  .abl-header h2 {
+    margin-bottom: 4px;
+  }
+  
+  .abl-subtitle {
+    font-size: 0.85rem;
+    color: var(--text-600);
+  }
+  
+  /* Dropdown styling, aligned with your other “select-like” inputs */
+  .abl-controls {
+    flex-shrink: 0;
+  }
+  
+  .abl-select {
+    min-width: 180px;
+    border-radius: 999px;
+    padding: 8px 14px;
+    border: 1px solid var(--glass-border);
+    background: #ffffff;
+    font-size: 0.9rem;
+    color: var(--text-900);
+    outline: none;
+  
+    -webkit-appearance: none;   /* remove macOS default UI */
+    -moz-appearance: none;
+    appearance: none;
+  
+    background-image: url("data:image/svg+xml;utf8,<svg fill='%23666666' height='18' viewBox='0 0 24 24' width='18' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 36px;      
+  }
+  
+  
+  .abl-select:focus {
+    border-color: var(--violet-600);
+  }
+  
+  /* Chart area */
+  .abl-chart {
+    min-height: 240px;
+  }
+  
+  /* Empty state message */
+  .abl-empty {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    color: var(--text-600);
+    text-align: center;
+    padding: 12px;
+  }
+  

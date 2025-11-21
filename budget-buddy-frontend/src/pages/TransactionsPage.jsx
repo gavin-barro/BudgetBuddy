@@ -168,7 +168,7 @@ export default function TransactionsPage({
               setPage(1);
             }}
           >
-            <option value="">All accounts</option>
+            <option value="">All Accounts</option>
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.name}
@@ -185,9 +185,9 @@ export default function TransactionsPage({
               setPage(1);
             }}
           >
-            <option value="All">All</option>
-            <option value="income">income</option>
-            <option value="expense">expense</option>
+            <option value="All">Income and Expense</option>
+            <option value="income">Income</option>
+            <option value="expense">Expense</option>
           </select>
 
           {/* Category */}
@@ -199,7 +199,7 @@ export default function TransactionsPage({
               setPage(1);
             }}
           >
-            <option value="All">All categories</option>
+            <option value="All">All Categories</option>
             {CATEGORIES.map((c) => (
               <option key={c} value={c}>
                 {c}

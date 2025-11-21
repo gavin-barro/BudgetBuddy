@@ -107,3 +107,23 @@
   font-size: 18px;
   line-height: 1;
 }
+
+/* Logout button with text */
+.logout-with-text {
+  width: auto;                 /* no forced circle shape */
+  height: auto;
+  padding: 8px 16px;
+  border-radius: 12px;         /* match nav buttons */
+  display: inline-flex;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.logout-with-text i {
+  font-size: 18px;
+}
+
+.logout-with-text:hover {
+  background: #dc2626;
+}

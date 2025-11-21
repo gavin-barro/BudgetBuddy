@@ -1,0 +1,108 @@
+/* TransactionsCard.css */
+
+/* Card tweaks specific to Recent Transactions */
+.tx-card {
+    /* .card base styles come from Dashboard.css */
+    padding: 18px 20px;
+  }
+  
+  /* Header spacing */
+  .tx-header {
+    margin-bottom: 8px;
+  }
+  
+  /* List reset (we still get base .list styles if defined globally) */
+  .tx-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Each row: title on left, amount on right */
+  .tx-row {
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 10px 4px;
+    border-bottom: 1px dashed rgba(0, 0, 0, 0.06);
+  }
+  
+  .tx-row:last-child {
+    border-bottom: none;
+  }
+  
+  /* Left block: title + meta stacked */
+  .tx-main {
+    display: grid;
+    row-gap: 4px;
+    padding-right: 12px;
+  }
+  
+  /* Transaction title */
+  .tx-title {
+    font-weight: 600;
+    color: var(--text-900);
+    font-size: 0.98rem;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    max-width: 70%;
+  }
+  
+  /* Meta row: category pill • account • date */
+  .tx-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 0.78rem;
+    color: var(--text-600);
+  }
+  
+  /* Category pill (matches Dashboard tag style) */
+  .tx-tag {
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    background: rgba(91, 33, 182, 0.08);
+    border: 1px solid rgba(91, 33, 182, 0.15);
+    color: var(--violet-700);
+  }
+  
+  /* Small separator dot */
+  .tx-dot {
+    width: 4px;
+    height: 4px;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 50%;
+  }
+
+  .tx-account {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100px; /* adjustable */
+  display: inline-block;
+  vertical-align: bottom;
+}
+
+  
+  /* Amount on the right */
+  .tx-amount {
+    white-space: nowrap;
+    margin-left: 8px;
+    font-weight: 700;
+    color: var(--text-900);
+    
+  }
+  
+  /* Use same color logic as Dashboard */
+  .tx-amount.neg {
+    color: #b91c1c;
+  }
+  
+  .tx-amount.pos {
+    color: #065f46;
+  }
+  
