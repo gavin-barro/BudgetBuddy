@@ -1,6 +1,6 @@
 package com.budgetbuddy.controller;
 
-import com.budgetbuddy.dto.UserDTO;
+// import com.budgetbuddy.dto.UserDTO;
 import com.budgetbuddy.entity.UserEntity;
 import com.budgetbuddy.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
