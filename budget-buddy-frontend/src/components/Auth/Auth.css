@@ -30,7 +30,7 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background: url('src/assets/budget-buddy-login.jpg') no-repeat;
+    background: url('../../assets/budget-buddy-login.jpg') no-repeat;
     background-size: cover;
     background-position: center;
 }
